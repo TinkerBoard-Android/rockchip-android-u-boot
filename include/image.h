@@ -22,6 +22,7 @@
 
 /* Define this to avoid #ifdefs later on */
 struct lmb;
+struct fdt_region;
 
 #ifdef USE_HOSTCC
 #include <sys/types.h>
