@@ -235,6 +235,16 @@ config FIT_ENABLE_RSASSA_PSS_SUPPORT
 	  Enable this to support the pss padding algorithm as described
 	  in the rfc8017 (https://tools.ietf.org/html/rfc8017).
 
+config FIT_SIGNATURE_MAX_SIZE
+	hex "Max size of signed FIT structures"
+	depends on FIT_SIGNATURE
+	default 0x10000000
+	help
+	  This option sets a max size in bytes for verified FIT uImages.
+	  A sane value of 256MB protects corrupted DTB structures from overlapping
+	  device memory. Assure this size does not extend past expected storage
+	  space.
+
 config FIT_VERBOSE
 	bool "Show verbose messages when FIT images fail"
 	help
