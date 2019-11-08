@@ -633,21 +633,6 @@ static int do_disk_guid(struct blk_desc *dev_desc, char * const namestr)
 }
 
 #ifdef CONFIG_CMD_GPT_RENAME
-/*
- * There are 3 malloc() calls in set_gpt_info() and there is no info about which
- * failed.
- */
-static void set_gpt_cleanup(char **str_disk_guid,
-			    disk_partition_t **partitions)
-{
-#ifdef CONFIG_RANDOM_UUID
-	if (str_disk_guid)
-		free(str_disk_guid);
-#endif
-	if (partitions)
-		free(partitions);
-}
-
 static int do_rename_gpt_parts(struct blk_desc *dev_desc, char *subcomm,
 			       char *name1, char *name2)
 {
@@ -699,11 +684,7 @@ static int do_rename_gpt_parts(struct blk_desc *dev_desc, char *subcomm,
 			   &new_partitions, &part_count);
 	if (ret < 0) {
 		del_gpt_info();
-		free(partitions_list);
-		if (ret == -ENOMEM)
-			set_gpt_cleanup(&str_disk_guid, &new_partitions);
-		else
-			goto out;
+		goto out;
 	}
 
 	if (!strcmp(subcomm, "swap")) {
@@ -768,11 +749,7 @@ static int do_rename_gpt_parts(struct blk_desc *dev_desc, char *subcomm,
 	 */
 	if (ret < 0) {
 		del_gpt_info();
-		free(partitions_list);
-		if (ret == -ENOMEM)
-			set_gpt_cleanup(&str_disk_guid, &new_partitions);
-		else
-			goto out;
+		goto out;
 	}
 
 	debug("Writing new partition table\n");
@@ -797,8 +774,12 @@ static int do_rename_gpt_parts(struct blk_desc *dev_desc, char *subcomm,
 	print_gpt_info();
 	del_gpt_info();
  out:
-	free(new_partitions);
-	free(str_disk_guid);
+#ifdef CONFIG_RANDOM_UUID
+	if (str_disk_guid)
+		free(str_disk_guid);
+#endif
+	if (new_partitions)
+		free(new_partitions);
 	free(partitions_list);
 	return ret;
 }
