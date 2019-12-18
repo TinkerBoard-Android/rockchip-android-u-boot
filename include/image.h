@@ -1030,6 +1030,8 @@ int fit_image_get_data_offset(const void *fit, int noffset, int *data_offset);
 int fit_image_get_data_position(const void *fit, int noffset,
 				int *data_position);
 int fit_image_get_data_size(const void *fit, int noffset, int *data_size);
+int fit_image_get_data_size_unciphered(const void *fit, int noffset,
+				       size_t *data_size);
 int fit_image_get_rollback_index(const void *fit, int noffset, uint32_t *index);
 
 int fit_image_hash_get_algo(const void *fit, int noffset, char **algo);
@@ -1075,6 +1077,7 @@ int fit_image_verify_with_data(const void *fit, int image_noffset,
 int fit_image_verify(const void *fit, int noffset);
 int fit_config_verify(const void *fit, int conf_noffset);
 int fit_all_image_verify(const void *fit);
+int fit_config_decrypt(const void *fit, int conf_noffset);
 int fit_board_verify_required_sigs(void);
 
 int fit_image_check_os(const void *fit, int noffset, uint8_t os);
@@ -1333,6 +1336,11 @@ int fit_image_verify_required_sigs(const void *fit, int image_noffset,
 int fit_image_check_sig(const void *fit, int noffset, const void *data,
 		size_t size, int required_keynode, char **err_msgp);
 
+int fit_image_decrypt_data(const void *fit,
+			   int image_noffset, int cipher_noffset,
+			   const void *data, size_t size,
+			   void **data_unciphered, size_t *size_unciphered);
+
 /**
  * fit_region_make_list() - Make a list of regions to hash
  *
@@ -1407,6 +1415,10 @@ struct cipher_algo {
 
 	int (*add_cipher_data)(struct image_cipher_info *info,
 			       void *keydest);
+
+	int (*decrypt)(struct image_cipher_info *info,
+		       const void *cipher, size_t cipher_len,
+		       void **data, size_t *data_len);
 };
 
 int fit_image_cipher_get_algo(const void *fit, int noffset, char **algo);
