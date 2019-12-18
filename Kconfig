@@ -245,6 +245,14 @@ config FIT_SIGNATURE_MAX_SIZE
 	  device memory. Assure this size does not extend past expected storage
 	  space.
 
+config FIT_CIPHER
+	bool "Enable ciphering data in a FIT uImages"
+	depends on DM
+	select AES
+	help
+	  Enable the feature of data ciphering/unciphering in the tool mkimage
+	  and in the u-boot support of the FIT image.
+
 config FIT_VERBOSE
 	bool "Show verbose messages when FIT images fail"
 	help
