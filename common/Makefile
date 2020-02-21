@@ -121,8 +121,9 @@ obj-$(CONFIG_$(SPL_TPL_)OF_LIBFDT) += image-fdt.o
 ifndef CONFIG_TPL_BUILD
 obj-$(CONFIG_$(SPL_TPL_)FIT) += image-fit.o
 obj-$(CONFIG_$(SPL_)MULTI_DTB_FIT) += boot_fit.o common_fit.o
-obj-$(CONFIG_$(SPL_TPL_)FIT_SIGNATURE) += image-sig.o
 endif
+obj-$(CONFIG_IMAGE_SIGN_INFO) += image-sig.o
+obj-$(CONFIG_$(SPL_TPL_)FIT_SIGNATURE) += image-fit-sig.o
 obj-$(CONFIG_$(SPL_TPL_)FIT_CIPHER) += image-cipher.o
 
 obj-y += memsize.o

@@ -72,7 +72,7 @@ resource_tool-objs := rockchip/resource_tool.o
 bmp2gray16-objs := rockchip/bmp2gray16.o
 endif
 
-FIT_SIG_OBJS-$(CONFIG_FIT_SIGNATURE) := common/image-sig.o
+FIT_SIG_OBJS-$(CONFIG_FIT_SIGNATURE) := common/image-sig.o common/image-fit-sig.o
 FIT_CIPHER_OBJS-$(CONFIG_FIT_CIPHER) := common/image-cipher.o
 
 # The following files are synced with upstream DTC.

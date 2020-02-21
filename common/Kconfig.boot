@@ -48,6 +48,8 @@ config FIT_SIGNATURE
         bool "Enable signature verification of FIT uImages"
         depends on DM
         select RSA
+	select RSA_VERIFY
+	select IMAGE_SIGN_INFO
         select CONSOLE_DISABLE_CLI
 	select FIT_FULL_CHECK
         help
@@ -158,6 +160,8 @@ config SPL_FIT_SIGNATURE
         depends on SPL_DM
         select SPL_FIT
         select SPL_RSA
+	select SPL_RSA_VERIFY
+	select IMAGE_SIGN_INFO
 	select SPL_FIT_FULL_CHECK
 
 config SPL_FIT_ROLLBACK_PROTECT
