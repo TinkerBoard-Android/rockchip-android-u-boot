@@ -484,7 +484,7 @@ error:
 	printf(" error!\n%s for '%s' hash node in '%s' config node\n",
 	       err_msg, fit_get_name(fit, noffset, NULL),
 	       fit_get_name(fit, conf_noffset, NULL));
-	return -1;
+	return -EPERM;
 }
 
 int fit_config_verify_required_sigs(const void *fit, int conf_noffset,
