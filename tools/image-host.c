@@ -736,12 +736,13 @@ int fit_add_verification_data(const char *keydir, void *keydest, void *fit,
 }
 
 #ifdef CONFIG_FIT_SIGNATURE
-int fit_check_sign(const void *fit, const void *key, int is_spl)
+int fit_check_sign(const void *fit, const void *key, int is_spl,
+		   const char *fit_uname_config)
 {
 	int cfg_noffset;
 	int ret;
 
-	cfg_noffset = fit_conf_get_node(fit, NULL);
+	cfg_noffset = fit_conf_get_node(fit, fit_uname_config);
 	if (!cfg_noffset)
 		return -1;
 
@@ -750,6 +751,7 @@ int fit_check_sign(const void *fit, const void *key, int is_spl)
 	ret = fit_config_verify(fit, cfg_noffset);
 	if (ret)
 		return ret;
+	printf("Verified OK, loading images\n");
 	ret = bootm_host_load_images(fit, cfg_noffset, is_spl);
 
 	return ret;
