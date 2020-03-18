@@ -998,7 +998,8 @@ void memmove_wd(void *to, void *from, size_t len, ulong chunksz)
 	memmove(to, from, len);
 }
 
-static int bootm_host_load_image(const void *fit, int req_image_type, int index)
+static int bootm_host_load_image(const void *fit, int req_image_type, int index,
+				 int cfg_noffset)
 {
 	const char *fit_uname_config = NULL;
 	ulong data, len;
@@ -1010,6 +1011,7 @@ static int bootm_host_load_image(const void *fit, int req_image_type, int index)
 	void *load_buf;
 	int ret;
 
+	fit_uname_config = fdt_get_name(fit, cfg_noffset, NULL);
 	memset(&images, '\0', sizeof(images));
 	images.verify = 1;
 	noffset = fit_image_load_index(&images, (ulong)fit,
@@ -1071,7 +1073,7 @@ int bootm_host_load_images(const void *fit, int cfg_noffset, int is_spl)
 	for (i = 0; !is_spl && i < ARRAY_SIZE(image_types); i++) {
 		int ret;
 
-		ret = bootm_host_load_image(fit, image_types[i], 0);
+		ret = bootm_host_load_image(fit, image_types[i], 0, cfg_noffset);
 		if (!err && ret && ret != -ENOENT)
 			err = ret;
 	}
@@ -1084,7 +1086,7 @@ int bootm_host_load_images(const void *fit, int cfg_noffset, int is_spl)
 		else
 			index = 0;
 
-		ret = bootm_host_load_image(fit, image_types_spl[i], index);
+		ret = bootm_host_load_image(fit, image_types_spl[i], index, cfg_noffset);
 		if (!err && ret && ret != -ENOENT)
 			err = ret;
 	}
