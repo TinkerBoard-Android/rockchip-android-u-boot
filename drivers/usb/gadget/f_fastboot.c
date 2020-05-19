@@ -654,6 +654,13 @@ static int fb_read_var(char *cmd, char *response,
 		else
 			ret = -1;
 		break;
+	case FB_BOOT_DEV:
+		s = env_get("devnum");
+		if (s)
+			fb_add_string(response, chars_left, s, NULL);
+		else
+			ret = -1;
+		break;
 	case FB_SECURE:
 		fb_add_string(response, chars_left, "yes", NULL);
 		break;
@@ -1062,6 +1069,7 @@ static const struct {
 	{ NAME_NO_ARGS("battery-voltage"), FB_BATT_VOLTAGE},
 	{ NAME_NO_ARGS("variant"), FB_VARIANT},
 	{ NAME_NO_ARGS("battery-soc-ok"), FB_BATT_SOC_OK},
+	{ NAME_NO_ARGS("bootdev"), FB_BOOT_DEV},
 #ifdef CONFIG_RK_AVB_LIBAVB_USER
 	/* Slots related */
 	{ NAME_NO_ARGS("slot-count"), FB_HAS_COUNT},
