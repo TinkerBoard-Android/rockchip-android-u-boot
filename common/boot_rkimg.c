@@ -255,7 +255,7 @@ int get_bootdev_type(void)
 	return type;
 }
 
-struct blk_desc *rockchip_get_bootdev(void)
+struct blk_desc *get_bootdev(int fastboot)
 {
 	static struct blk_desc *dev_desc = NULL;
 	int dev_type;
@@ -266,7 +266,11 @@ struct blk_desc *rockchip_get_bootdev(void)
 
 	boot_devtype_init();
 	dev_type = get_bootdev_type();
-	devnum = env_get_ulong("devnum", 10, 0);
+
+	if (fastboot == 1)
+		devnum = 0;
+	else
+		devnum = env_get_ulong("devnum", 10, 0);
 
 	dev_desc = blk_get_devnum_by_type(dev_type, devnum);
 	if (!dev_desc) {
@@ -290,6 +294,21 @@ struct blk_desc *rockchip_get_bootdev(void)
 
 	printf("PartType: %s\n", part_get_type(dev_desc));
 
+	return dev_desc;
+}
+
+struct blk_desc *rockchip_get_bootdev(void)
+{
+	static struct blk_desc *dev_desc = NULL;
+	dev_desc = get_bootdev(0);
+	return dev_desc;
+}
+
+struct blk_desc *rockchip_get_bootdev_fastboot(void)
+{
+	static struct blk_desc *dev_desc = NULL;
+	dev_desc = get_bootdev(1);
+	printf("Always use MMC0 with Fastboot flash and erase.\n");
 	return dev_desc;
 }
 
