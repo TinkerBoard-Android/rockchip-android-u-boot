@@ -29,6 +29,7 @@
 
 extern bool powertip_panel_connected;
 extern bool rpi_panel_connected;
+extern unsigned int powertip_id;
 
 struct rockchip_cmd_header {
 	u8 data_type;
@@ -640,7 +641,11 @@ static int rockchip_panel_probe(struct udevice *dev)
 		plat->bus_format = MEDIA_BUS_FMT_RBG888_1X24;
 		plat->bpc = 8;
 
-		data = dev_read_prop(dev, "powertip-init-sequence", &len);
+		if (powertip_id == 0x86) {
+			data = dev_read_prop(dev, "powertip-rev-b-init-sequence", &len);
+		} else {
+			data = dev_read_prop(dev, "powertip-rev-a-init-sequence", &len);
+		}
 		if (data) {
 			plat->on_cmds = calloc(1, sizeof(*plat->on_cmds));
 			if (plat->on_cmds) {

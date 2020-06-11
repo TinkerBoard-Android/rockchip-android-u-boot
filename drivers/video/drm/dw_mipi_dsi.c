@@ -1599,6 +1599,7 @@ static int dw_mipi_dsi_child_post_bind(struct udevice *dev)
 extern int  panel_i2c_reg_read(struct udevice *dev, uint offset);
 bool powertip_panel_connected;
 bool rpi_panel_connected;
+unsigned int powertip_id;
 
 static int dw_mipi_dsi_child_pre_probe(struct udevice *dev)
 {
@@ -1621,8 +1622,9 @@ static int dw_mipi_dsi_child_pre_probe(struct udevice *dev)
 		device->lanes = 1;
 		device->format = MIPI_DSI_FMT_RGB888;
 		device->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST ;
-	} else if (powertip_buffer == 0x85) {
+	} else if ((powertip_buffer & 0xF0) == 0x80) {
 		powertip_panel_connected = true;
+		powertip_id = powertip_buffer;
 		device->lanes = 2;
 		device->format = MIPI_DSI_FMT_RGB888;
 		device->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST |MIPI_DSI_MODE_LPM;
