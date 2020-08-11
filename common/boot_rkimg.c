@@ -378,6 +378,28 @@ void board_run_recovery_wipe_data(void)
 }
 
 /*
+ * This function is used to flash bootloader message.
+ */
+void flash_bootloader_msg(void)
+{
+	struct bootloader_message *bmsg = NULL;
+	struct blk_desc *dev_desc;
+	disk_partition_t part_info;
+	int cnt;
+
+	dev_desc = rockchip_get_bootdev();
+	part_get_info_by_name(dev_desc, PART_MISC, &part_info);
+	cnt = DIV_ROUND_UP(sizeof(struct bootloader_message), dev_desc->blksz);
+	bmsg = memalign(ARCH_DMA_MINALIGN, cnt * dev_desc->blksz);
+	blk_dread(dev_desc, part_info.start + BOOTLOADER_MESSAGE_BLK_OFFSET, cnt, bmsg);
+
+	strcpy(bmsg->command, "");
+	strcpy(bmsg->recovery, "");
+	rkloader_set_bootloader_msg(bmsg);
+	printf("Flash bootloader message to normal!\n");
+}
+
+/*
  * Generally, we have 3 ways to get reboot mode:
  *
  * 1. from bootloader_message which is defined in MISC partition;
@@ -472,6 +494,7 @@ fallback:
 			printf("boot mode: normal\n");
 			boot_mode = BOOT_MODE_NORMAL;
 			clear_boot_reg = 1;
+			flash_bootloader_msg();
 			break;
 		case BOOT_RECOVERY:
 			printf("boot mode: recovery (cmd)\n");
@@ -499,6 +522,7 @@ fallback:
 		default:
 			printf("boot mode: None\n");
 			boot_mode = BOOT_MODE_UNDEFINE;
+			flash_bootloader_msg();
 		}
 	}
 
