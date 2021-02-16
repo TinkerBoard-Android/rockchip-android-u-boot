@@ -731,7 +731,7 @@ int do_fdcboot (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #if defined(CONFIG_FIT)
 	/* This cannot be done earlier, we need complete FIT image in RAM first */
 	if (genimg_get_format ((void *)addr) == IMAGE_FORMAT_FIT) {
-		if (!fit_check_format (fit_hdr)) {
+		if (fit_check_format (fit_hdr, IMAGE_SIZE_INVAL)) {
 			puts ("** Bad FIT image format\n");
 			return 1;
 		}

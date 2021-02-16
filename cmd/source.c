@@ -98,7 +98,7 @@ source (ulong addr, const char *fit_uname)
 		}
 
 		fit_hdr = buf;
-		if (!fit_check_format (fit_hdr)) {
+		if (fit_check_format (fit_hdr, IMAGE_SIZE_INVAL)) {
 			puts ("Bad FIT image format\n");
 			return 1;
 		}
