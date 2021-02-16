@@ -16,7 +16,6 @@
 #include <time.h>
 #else
 #include <linux/compiler.h>
-#include <linux/kconfig.h>
 #include <common.h>
 #include <errno.h>
 #include <mapmem.h>
@@ -29,6 +28,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #include <image.h>
 #include <bootstage.h>
+#include <linux/kconfig.h>
 #include <u-boot/crc.h>
 #include <u-boot/md5.h>
 #include <u-boot/sha1.h>
@@ -1690,6 +1690,22 @@ int fit_check_format(const void *fit, ulong size)
 		debug("Wrong FIT format: not a flattened device tree (err=%d)\n",
 			  ret);
 		return -ENOEXEC;
+	}
+
+	if (CONFIG_IS_ENABLED(FIT_FULL_CHECK)) {
+		/*
+		 * If we are not given the size, make do wtih calculating it.
+		 * This is not as secure, so we should consider a flag to
+		 * control this.
+		 */
+		if (size == IMAGE_SIZE_INVAL)
+			size = fdt_totalsize(fit);
+		ret = fdt_check_full(fit, size);
+
+		if (ret) {
+			debug("FIT check error %d\n", ret);
+			return -EINVAL;
+		}
 	}
 
 	/* mandatory / node 'description' property */
