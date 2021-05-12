@@ -189,6 +189,21 @@ static const struct dw_hdmi_phy_config rockchip_phy_config[] = {
 };
 
 static const struct base_drm_display_mode resolution_white[] = {
+	/* ?, vic:? - 800x480@66Hz VGG804826*/
+	{ DRM_BASE_MODE(32000, 800, 840,
+			888, 928, 480, 493, 496, 525, 0,
+			DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC),
+	  .vrefresh = 66, .picture_aspect_ratio = HDMI_PICTURE_ASPECT_NONE, },
+	/* ?. vic:? - 800x480@60Hz VGG804838*/
+	{ DRM_BASE_MODE(33260, 800, 880,
+			910, 1056, 480, 483, 486, 525, 0,
+			DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
+	  .vrefresh = 60, .picture_aspect_ratio = HDMI_PICTURE_ASPECT_NONE, },
+	/* ?. vic:? - 800x480@60Hz DWE2100*/
+	{ DRM_BASE_MODE(33900, 800, 844,
+			932, 1056, 480, 483, 489, 535, 0,
+			DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
+	  .vrefresh = 60, .picture_aspect_ratio = HDMI_PICTURE_ASPECT_NONE, },
 	/* 0. vic:2 - 720x480@60Hz */
 	{ DRM_BASE_MODE(27000, 720, 736,
 			798, 858, 480, 489, 495, 525, 0,
@@ -660,6 +675,8 @@ void drm_rk_selete_output(struct hdmi_edid_data *edid_data,
 		*bus_format = MEDIA_BUS_FMT_RGB888_1X24;
 	else
 		*bus_format = MEDIA_BUS_FMT_YUV8_1X24;
+
+	*bus_format = MEDIA_BUS_FMT_RGB888_1X24;
 
 	dev_desc = rockchip_get_bootdev();
 	if (!dev_desc) {
