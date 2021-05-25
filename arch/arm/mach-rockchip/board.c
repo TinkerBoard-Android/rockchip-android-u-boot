@@ -47,6 +47,8 @@
 #include <asm/arch/rk_atags.h>
 #include <asm/arch/vendor.h>
 
+#define SERIALNO_USE_RK_RULE 0 //if 1 read sn from vendor patition;  if 0 use sn from efuse
+
 DECLARE_GLOBAL_DATA_PTR;
 
 __weak int rk_board_late_init(void)
@@ -293,7 +295,8 @@ static void cmdline_handle(void)
 int board_late_init(void)
 {
 	rockchip_set_ethaddr();
-	rockchip_set_serialno();
+	if (SERIALNO_USE_RK_RULE)
+		rockchip_set_serialno();
 	setup_download_mode();
 #if (CONFIG_ROCKCHIP_BOOT_MODE_REG > 0)
 	setup_boot_mode();
