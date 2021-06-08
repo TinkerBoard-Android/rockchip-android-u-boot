@@ -39,6 +39,7 @@ struct hw_config
 {
 	int valid;
 
+	int fiq_debugger;
 	int i2c6, i2c7;
 	int uart0, uart4;
 	int i2s0;
@@ -78,7 +79,17 @@ static unsigned long hw_skip_line(char *text)
 static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 {
 	int i = 0;
-	if(memcmp(text, "i2c6=", 5) == 0) {
+	if(memcmp(text, "fiq_debugger=",  13) == 0) {
+		i = 13;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->fiq_debugger = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->fiq_debugger = -1;
+			i = i + 3;
+		} else
+			goto invalid_line;
+	} else if(memcmp(text, "i2c6=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
 			hw_conf->i2c6 = 1;
@@ -570,6 +581,26 @@ static int set_hw_property(struct fdt_header *working_fdt, char *path, char *pro
 	return 0;
 }
 
+static int set_hw_property_u32(struct fdt_header *working_fdt, char *path, char *property, u32 value)
+{
+	int offset;
+	int ret;
+
+	printf("set_hw_property_u32: %s %s %08x\n", path, property, value);
+	offset = fdt_path_offset (working_fdt, path);
+	if (offset < 0) {
+		printf("libfdt fdt_path_offset() returned %s\n", fdt_strerror(offset));
+		return -1;
+	}
+	ret = fdt_setprop_u32(working_fdt, offset, property, value);
+	if (ret < 0) {
+		printf("libfdt fdt_setprop_u32(): %s\n", fdt_strerror(ret));
+		return -1;
+	}
+
+	return 0;
+}
+
 static int flash_device_node(struct fdt_header *working_fdt, char *path, char *property, char *tag)
 {
 	int offset, len;;
@@ -804,6 +835,11 @@ static void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, str
 	}
 	free(hw_conf->overlay_file);
 #endif
+
+	if (hw_conf->fiq_debugger == 1)
+		set_hw_property_u32(working_fdt, "/fiq-debugger", "rockchip,serial-id", 0x00000002);
+	else if (hw_conf->fiq_debugger == -1)
+		set_hw_property_u32(working_fdt, "/fiq-debugger", "rockchip,serial-id", 0xffffffff);
 
 	if (hw_conf->i2c6 == 1)
 		set_hw_property(working_fdt, "/i2c@ff150000", "status", "okay", 5);
@@ -1261,6 +1297,7 @@ static int android_image_separate(struct andr_img_hdr *hdr,
 	printf("config.txt valid = %d\n", hw_conf.valid);
 	if(hw_conf.valid == 1) {
 		printf("config on: 1, config off: -1, no config: 0\n");
+		printf("intf.fiq_debugger = %d\n", hw_conf.fiq_debugger);
 		printf("intf.i2c6 = %d\n", hw_conf.i2c6);
 		printf("intf.i2c7 = %d\n", hw_conf.i2c7);
 		printf("intf.uart0 = %d\n", hw_conf.uart0);
