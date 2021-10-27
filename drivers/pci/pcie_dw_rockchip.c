@@ -529,23 +529,23 @@ static int rk_pcie_link_up(struct rk_pcie *priv, u32 cap_speed)
 	/* Enable LTSSM */
 	rk_pcie_enable_ltssm(priv);
 
-	for (retries = 0; retries < 10000000; retries++) {
+	for (retries = 0; retries < 50; retries++) {
 		if (is_link_up(priv)) {
 			dev_info(priv->dev, "PCIe Link up, LTSSM is 0x%x\n",
 				 rk_pcie_readl_apb(priv, PCIE_CLIENT_LTSSM_STATUS));
 			rk_pcie_debug_dump(priv);
+			/* Link maybe in Gen switch recovery but we need to wait more 1s */
+			msleep(1000);
 			return 0;
 		}
 
 		dev_info(priv->dev, "PCIe Linking... LTSSM is 0x%x\n",
 			 rk_pcie_readl_apb(priv, PCIE_CLIENT_LTSSM_STATUS));
 		rk_pcie_debug_dump(priv);
-		msleep(1000);
+		msleep(100);
 	}
 
 	dev_err(priv->dev, "PCIe-%d Link Fail\n", priv->dev->seq);
-	/* Link maybe in Gen switch recovery but we need to wait more 1s */
-	msleep(1000);
 	return -EINVAL;
 }
 

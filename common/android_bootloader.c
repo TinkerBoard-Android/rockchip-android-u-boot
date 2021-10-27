@@ -36,22 +36,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#if defined(CONFIG_ANDROID_AB) && defined(CONFIG_ANDROID_AVB)
-static void reset_cpu_if_android_ab(void)
-{
-	printf("Reset in AB system.\n");
-	flushc();
-	/*
-	 * Since we use the retry-count in ab system, then can
-	 * try reboot if verify fail until the retry-count is
-	 * equal to zero.
-	 */
-	reset_cpu(0);
-}
-#else
-static inline void reset_cpu_if_android_ab(void) {}
-#endif
-
 int android_bootloader_message_load(
 	struct blk_desc *dev_desc,
 	const disk_partition_t *part_info,
@@ -280,7 +264,9 @@ static int sysmem_alloc_uncomp_kernel(ulong andr_hdr,
 		kaddr -= hdr->page_size;
 		if (sysmem_free((phys_addr_t)kaddr))
 			return -EINVAL;
-
+#ifdef CONFIG_SKIP_RELOCATE_UBOOT
+		sysmem_free(CONFIG_SYS_TEXT_BASE);
+#endif
 		/*
 		 * Use smaller Ratio to get larger estimated uncompress
 		 * kernel size.
@@ -962,9 +948,6 @@ int android_bootloader_boot_flow(struct blk_desc *dev_desc,
 	/* Get current slot_suffix */
 	if (ab_get_slot_suffix(slot_suffix))
 		return -1;
-
-	if (ab_decrease_tries())
-		printf("Decrease ab tries count fail!\n");
 #endif
 	switch (mode) {
 	case ANDROID_BOOT_MODE_NORMAL:
@@ -1025,7 +1008,6 @@ int android_bootloader_boot_flow(struct blk_desc *dev_desc,
 		if (android_slot_verify(boot_partname, &load_address,
 					slot_suffix)) {
 			printf("AVB verify failed\n");
-			reset_cpu_if_android_ab();
 
 			return -1;
 		}
@@ -1058,7 +1040,6 @@ int android_bootloader_boot_flow(struct blk_desc *dev_desc,
 			if (android_slot_verify(boot_partname, &load_address,
 						slot_suffix)) {
 				printf("AVB verify failed\n");
-				reset_cpu_if_android_ab();
 
 				return -1;
 			}
