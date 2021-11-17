@@ -9,10 +9,90 @@
 #include <malloc.h>
 #include <asm/io.h>
 #include <asm/arch/boot_mode.h>
+#include <asm/arch-rockchip/gpio.h>
 
 #define CONFIG_GRF_SOC_STATUS3_REG 0xff77e2ac
 
 DECLARE_GLOBAL_DATA_PTR;
+
+#ifdef CONFIG_ROCKCHIP_RK3288
+/*
+*
+* usb current limit : GPIO6_A6 (H:unlock, L:lock)
+*
+*/
+void usb_current_limit_unlock(bool unlock_current)
+{
+	int tmp;
+
+	printf("%s: unlock_current = %d\n", __func__, unlock_current);
+	tmp = readl(RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
+	if(unlock_current == true)
+		writel(tmp | 0x40, RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
+	else
+		writel(tmp & ~0x40, RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
+
+	tmp = readl(RKIO_GPIO6_PHYS + GPIO_SWPORT_DDR);
+	writel(tmp | 0x40, RKIO_GPIO6_PHYS + GPIO_SWPORT_DDR);
+}
+
+/*
+*
+* eMMC maskrom mode : GPIO6_A7 (H:disable maskrom, L:enable maskrom)
+*
+*/
+void rk3288_maskrom_disable(bool enable_emmc)
+{
+	int tmp;
+
+	printf("%s: enable_emmc = %d\n", __func__, enable_emmc);
+	tmp = readl(RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
+	if(enable_emmc == true)
+		writel(tmp | 0x80, RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
+	else
+		writel(tmp & ~0x80, RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
+
+	tmp = readl(RKIO_GPIO6_PHYS + GPIO_SWPORT_DDR);
+	writel(tmp | 0x80, RKIO_GPIO6_PHYS + GPIO_SWPORT_DDR);
+	mdelay(10);
+}
+
+/*
+*
+* project id        : GPIO2_A3 GPIO2_A2 GPIO2_A1
+* pcb id            : GPIO2_B2 GPIO2_B1 GPIO2_B0
+* SDP/CDP           : GPIO6_A5 (H:SDP, L:CDP)
+* usb current limit : GPIO6_A6 (H:unlock, L:lock)
+* eMMC maskrom mode : GPIO6_A7 (H:disable maskrom, L:enable maskrom)
+*
+* Please check TRM V1.2 part1 page 152 for the following register settings
+*
+*/
+int check_force_enter_ums_mode(void)
+{
+	int tmp;
+
+	// GPIO6_A5 pull up/down disable
+	tmp = readl(RKIO_GRF_PHYS + GRF_GPIO6A_P);
+	writel((tmp&~(0x03<<10)) | 0x03<<(16 + 10), RKIO_GRF_PHYS + GRF_GPIO6A_P);
+
+	// GPIO6_A5 set to input
+	tmp = readl(RKIO_GPIO6_PHYS + GPIO_SWPORT_DDR);
+	writel(tmp & ~(0x20), RKIO_GPIO6_PHYS + GPIO_SWPORT_DDR);
+
+	mdelay(10);
+
+	printf("PC event = 0x%x\n", readl(RKIO_GPIO6_PHYS + GPIO_EXT_PORT)&0x20);
+	if((readl(RKIO_GPIO6_PHYS + GPIO_EXT_PORT)&0x20)==0x20) {
+		// SDP detected
+		printf("usb connected to SDP, should enter ums mode\n");
+		return 1;
+	} else {
+		usb_current_limit_unlock(false);
+	}
+	return 0;
+}
+#endif
 
 static void rkloader_set_bootloader_msg(struct bootloader_message *bmsg)
 {
@@ -168,7 +248,9 @@ int rockchip_get_boot_mode(void)
 		{ -EINVAL, -EINVAL, -EINVAL };
 	static int bcb_offset = -EINVAL;	/* static */
 	uint32_t reg_boot_mode;
+#ifdef CONFIG_ROCKCHIP_RK3399
 	uint32_t reg_soc_status3;
+#endif
 	char *env_reboot_mode;
 	int clear_boot_reg = 0;
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
@@ -286,9 +368,13 @@ int rockchip_get_boot_mode(void)
 			boot_mode[PL] = BOOT_MODE_WATCHDOG;
 			break;
 		default:
+#if defined(CONFIG_ROCKCHIP_RK3399)
 			reg_soc_status3 = readl((void *)CONFIG_GRF_SOC_STATUS3_REG);
 			if (reg_soc_status3 & (1 << 12)) {
 				printf("usbcphy0_otg_utmi_bvalid = 1\n");
+#elif defined(CONFIG_ROCKCHIP_RK3288)
+			if (check_force_enter_ums_mode()) {
+#endif
 				boot_mode[PH] = BOOT_MODE_UMS;
 				clear_boot_reg = 1;
 			} else {

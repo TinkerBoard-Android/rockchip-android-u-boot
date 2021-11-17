@@ -64,7 +64,9 @@ static void boot_devtype_init(void)
 	if (done)
 		return;
 
+#ifdef CONFIG_ROCKCHIP_RK3399
 	rk3399_mask_release_high();
+#endif
 
 #if defined(CONFIG_SCSI) && defined(CONFIG_CMD_SCSI) && defined(CONFIG_AHCI)
 	ret = run_command("scsi scan", 0);
