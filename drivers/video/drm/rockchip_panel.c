@@ -29,6 +29,7 @@
 
 extern bool powertip_panel_connected;
 extern bool rpi_panel_connected;
+extern unsigned int panel_i2c_busnum;
 extern unsigned int powertip_id;
 
 struct rockchip_cmd_header {
@@ -308,7 +309,7 @@ static void panel_simple_prepare(struct rockchip_panel *panel)
 		return;
 
 	if (powertip_panel_connected) {
-		i2c_get_chip_for_busnum(0x8, 0x36, 1, &dev);
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &dev);
 		panel_i2c_reg_write(dev, 0x5, 0x3);
 		mdelay(20);
 		panel_i2c_reg_write(dev, 0x5, 0x0);
@@ -404,7 +405,7 @@ static void panel_simple_enable(struct rockchip_panel *panel)
 	printf("panel_simple_enable\n");
 
 	if (rpi_panel_connected) {
-		i2c_get_chip_for_busnum(0x8, 0x45, 1, &dev);
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &dev);
 		panel_i2c_reg_write(dev, 0x85, 0x0);
 		mdelay(200);
 		panel_i2c_reg_write(dev, 0x85, 0x1);
@@ -417,7 +418,7 @@ static void panel_simple_enable(struct rockchip_panel *panel)
 		panel_i2c_reg_write(dev, 0x86, 255);
 		printf("panel_simple_enable rpi backlight on\n");
 	} else if (powertip_panel_connected) {
-		i2c_get_chip_for_busnum(0x8, 0x36, 1, &dev);
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &dev);
 		mdelay(50);
 		panel_i2c_reg_write(dev, 0x6, 0x80|0x0F);
 		printf("panel_simple_enable powertip backlight on\n");
@@ -447,12 +448,12 @@ static void panel_simple_disable(struct rockchip_panel *panel)
 		return;
 
 	if (rpi_panel_connected) {
-		i2c_get_chip_for_busnum(0x8, 0x45, 1, &dev);
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &dev);
 		dm_i2c_reg_write(dev, 0x86, 0);
 		dm_i2c_reg_write(dev, 0x85, 0x0);
 		mdelay(50);
 	} else if (powertip_panel_connected) {
-		i2c_get_chip_for_busnum(0x8, 0x36, 1, &dev);
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &dev);
 		dm_i2c_reg_write(dev, 0x6, 0);
 		dm_i2c_reg_write(dev, 0x5, 0x0);
 		mdelay(50);

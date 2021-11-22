@@ -412,6 +412,7 @@ int drm_mode_vrefresh(const struct drm_display_mode *mode)
 
 extern bool powertip_panel_connected;
 extern bool rpi_panel_connected;
+extern unsigned int panel_i2c_busnum;
 #if defined(CONFIG_DRM_I2C_SN65DSI84)
 extern void sn65dsi84_setup_desc( struct drm_display_mode *dmode);
 extern bool sn65dsi84_is_connected(void);
@@ -1858,13 +1859,18 @@ static int rockchip_display_probe(struct udevice *dev)
 			int powertip_buffer = 0;
 			int rpi_buffer = 0;
 
+			if ( ofnode_read_bool(node, "rk3288_tinker_baord"))
+				panel_i2c_busnum = ofnode_read_u32_default(node, "i2c_busnum", -1);
+
+			printf("rockchip_display_probe: panel_i2c_busnum = %d \n", panel_i2c_busnum);
+
 			if (sn65dsi84_is_connected() || sn65dsi86_is_connected()) {
 				printf("rockchip_display_probe: sn65dsi8x_is_connected\n");
 			} else {
-			i2c_get_chip_for_busnum(0x8, 0x45, 1, &rpi_dev);//rpi
+			i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &rpi_dev);//rpi
 			rpi_buffer = panel_i2c_reg_read(rpi_dev, 0x80);
 
-			i2c_get_chip_for_busnum(0x8, 0x36, 1, &powertip_dev);//powertip
+			i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &powertip_dev);//powertip
 			powertip_buffer = panel_i2c_reg_read(powertip_dev, 0x4);
 			printf("rockchip_display_probe rpi_buffer=%d  powertip_buffer=%d\n",rpi_buffer, powertip_buffer);
 
