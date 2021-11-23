@@ -210,7 +210,7 @@ enum {
 
 /* Keep divisors as low as possible to reduce jitter and power usage */
 static const struct pll_div apll_init_cfg = PLL_DIVISORS(APLL_HZ, 1, 1);
-static const struct pll_div gpll_init_cfg = PLL_DIVISORS(GPLL_HZ, 1, 4);
+static const struct pll_div gpll_init_cfg = PLL_DIVISORS(GPLL_HZ, 1, 8);
 static const struct pll_div cpll_init_cfg = PLL_DIVISORS(CPLL_HZ, 1, 2);
 
 struct pll_div *rkclk_get_pll_config(ulong freq_hz)
@@ -245,10 +245,15 @@ static int rkclk_set_pll(struct rk3288_cru *cru, enum rk_clk_id clk_id,
 	rk_clrsetreg(&pll->con1, CLKF_MASK, div->nf - 1);
 
 	/* adjust pll bw for better clock jitter */
-	if (div->nb)
+	if (div->nb) {
 		rk_clrsetreg(&pll->con2, PLL_BWADJ_MASK, div->nb - 1);
-	else
-		rk_clrsetreg(&pll->con2, PLL_BWADJ_MASK, (div->nf >> 1) - 1);
+	} else {
+		if (clk_id == CLK_GENERAL)
+			rk_clrsetreg(&pll->con2, PLL_BWADJ_MASK, 0);
+		else
+			rk_clrsetreg(&pll->con2, PLL_BWADJ_MASK, (div->nf >> 1) - 1);
+
+	}
 
 	udelay(10);
 
@@ -1453,6 +1458,7 @@ static int rk3288_clk_probe(struct udevice *dev)
 		priv->armclk_enter_hz = rkclk_pll_get_rate(priv->cru,
 							   CLK_ARM);
 
+	init_clocks = true;
 	if (init_clocks) {
 		rkclk_init(priv->cru, priv->grf);
 		if (!priv->armclk_init_hz)
