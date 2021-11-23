@@ -20,6 +20,7 @@ enum _boot_mode {
 	BOOT_MODE_WATCHDOG,
 	BOOT_MODE_DFU,
 	BOOT_MODE_UNDEFINE,
+	BOOT_MODE_UMS_HW,	/* hardware to trigger ums mode */
 };
 
 struct bootloader_message {
