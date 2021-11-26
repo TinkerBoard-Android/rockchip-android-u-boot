@@ -52,7 +52,11 @@
 #include <rk_eink.h>
 #endif
 
-#define SERIALNO_USE_RK_RULE 0 //if 1 read sn from vendor patition;  if 0 use sn from efuse
+#ifdef CONFIG_ROCKCHIP_RK3399	//rk3399 read ssn from efuse at misc_init_r()
+#define SERIALNO_USE_RK_RULE 0
+#else
+#define SERIALNO_USE_RK_RULE 1	//rk3288 use cpuid as serialno
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
