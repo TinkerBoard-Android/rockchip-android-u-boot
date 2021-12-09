@@ -156,7 +156,6 @@ static int do_usb_mass_storage(cmd_tbl_t *cmdtp, int flag,
 	}
 
 #ifdef CONFIG_ROCKCHIP_RK3288
-	usb_current_limit_unlock(true);
 	rk3288_maskrom_disable(true);
 #endif
 
@@ -164,7 +163,6 @@ static int do_usb_mass_storage(cmd_tbl_t *cmdtp, int flag,
 	if (rc < 0) {
 #ifdef CONFIG_ROCKCHIP_RK3288
 		rk3288_maskrom_disable(false);
-		usb_current_limit_unlock(false);
 #endif
 		return CMD_RET_FAILURE;
 	}
@@ -252,7 +250,6 @@ cleanup_ums_init:
 
 #ifdef CONFIG_ROCKCHIP_RK3288
 	rk3288_maskrom_disable(false);
-	usb_current_limit_unlock(false);
 #endif
 	return rc;
 }
