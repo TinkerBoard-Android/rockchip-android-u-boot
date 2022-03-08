@@ -11,6 +11,8 @@
 
 #define MAX_FILE_NAME_LEN		220
 #define MAX_HASH_LEN			32
+#define ROOT_COMPAT_PROP_OFFSET		0x4c	/* Property: "/compatible" */
+#define DTB_SUFFIX			".dtb"
 
 struct resource_file {
 	char		name[MAX_FILE_NAME_LEN];
@@ -19,12 +21,14 @@ struct resource_file {
 	uint32_t	f_offset;	/* Sector offset */
 	uint32_t	f_size;		/* Bytes */
 	struct list_head link;
+	struct list_head dtbs;
 	/* Sector base of resource when ram=false, byte base when ram=true */
 	uint32_t	rsce_base;
 	bool		ram;
 };
 
 extern struct list_head entrys_head;
+extern struct list_head entrys_dtbs_head;
 
 /*
  * resource_image_check_header - check resource image header
@@ -93,13 +97,15 @@ struct resource_file *resource_read_hwid_dtb(void);
 int resource_is_empty(void);
 
 /*
- * resource_populate_dtb() - read fdt from this image: android/fit.
- */
-int resource_populate_dtb(void *img, void *fdt);
-
-/*
  * resource_traverse_init_list() - traverse all image(android/fit/uimage)
  */
 int resource_traverse_init_list(void);
+
+/*
+ * board_resource_dtb_accepted() - check if this dtb is accepted
+ *
+ * return 0 if not accepted, otherwise accepted.
+ */
+int board_resource_dtb_accepted(char *dtb_name);
 
 #endif

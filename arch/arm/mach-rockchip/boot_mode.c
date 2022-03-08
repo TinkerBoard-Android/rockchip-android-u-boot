@@ -158,9 +158,7 @@ enum {
 	PL,
 };
 
-static u32 bcb_recovery_msg;
-
-static int misc_require_recovery(u32 bcb_offset)
+static int misc_require_recovery(u32 bcb_offset, int *bcb_recovery_msg)
 {
 	struct bootloader_message *bmsg;
 	struct blk_desc *dev_desc;
@@ -184,11 +182,13 @@ static int misc_require_recovery(u32 bcb_offset)
 		recovery = 0;
 	} else {
 		recovery = !strcmp(bmsg->command, "boot-recovery");
-		if (!strcmp(bmsg->recovery, "recovery\n--rk_fwupdate\n"))
-			bcb_recovery_msg = BCB_MSG_RECOVERY_RK_FWUPDATE;
-		else if (!strcmp(bmsg->recovery, "recovery\n--factory_mode=whole") ||
-			 !strcmp(bmsg->recovery, "recovery\n--factory_mode=small"))
-			bcb_recovery_msg = BCB_MSG_RECOVERY_PCBA;
+		if (bcb_recovery_msg) {
+			if (!strcmp(bmsg->recovery, "recovery\n--rk_fwupdate\n"))
+				*bcb_recovery_msg = BCB_MSG_RECOVERY_RK_FWUPDATE;
+			else if (!strcmp(bmsg->recovery, "recovery\n--factory_mode=whole") ||
+				 !strcmp(bmsg->recovery, "recovery\n--factory_mode=small"))
+				*bcb_recovery_msg = BCB_MSG_RECOVERY_PCBA;
+		}
 	}
 
 	free(bmsg);
@@ -227,6 +227,14 @@ out:
 
 int get_bcb_recovery_msg(void)
 {
+	int bcb_recovery_msg = BCB_MSG_RECOVERY_NONE;
+#ifdef CONFIG_ANDROID_BOOT_IMAGE
+	u32 bcb_offset = android_bcb_msg_sector_offset();
+#else
+	u32 bcb_offset = BCB_MESSAGE_BLK_OFFSET;
+#endif
+	misc_require_recovery(bcb_offset, &bcb_recovery_msg);
+
 	return bcb_recovery_msg;
 }
 
@@ -253,6 +261,7 @@ int rockchip_get_boot_mode(void)
 #endif
 	char *env_reboot_mode;
 	int clear_boot_reg = 0;
+	int recovery_msg = 0;
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 	u32 offset = android_bcb_msg_sector_offset();
 #else
@@ -329,7 +338,7 @@ int rockchip_get_boot_mode(void)
 		printf("boot mode: bootloader\n");
 		boot_mode[PH] = BOOT_MODE_BOOTLOADER;
 		clear_boot_reg = 1;
-	} else if (misc_require_recovery(bcb_offset)) {
+	} else if (misc_require_recovery(bcb_offset, &recovery_msg)) {
 		printf("boot mode: recovery (misc)\n");
 		boot_mode[PM] = BOOT_MODE_RECOVERY;
 	} else if (misc_require_fastboot(bcb_offset)) {
