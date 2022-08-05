@@ -123,7 +123,7 @@ static int rockchip_set_ethaddr(void)
 		}
 
 		if (is_valid_ethaddr(&ethaddr[i * ARP_HLEN])) {
-			sprintf(buf, "%pM", &ethaddr[i * ARP_HLEN]);
+			snprintf(buf, ARP_HLEN_ASCII + 1, "%pM", &ethaddr[i * ARP_HLEN]);
 			if (i == 0)
 				memcpy(mac, "ethaddr", sizeof("ethaddr"));
 			else
@@ -168,10 +168,14 @@ static int rockchip_set_serialno(void)
 				break;
 		}
 
-		serialno_str[i + 1] = 0x0;
-		env_set("serial#", serialno_str);
-	} else {
+		/* valid character count > 0 */
+		if (i > 0) {
+			serialno_str[i + 1] = 0x0;
+			env_set("serial#", serialno_str);
+		}
+	}
 #endif
+	if (!env_get("serial#")) {
 #if defined(CONFIG_ROCKCHIP_EFUSE) || defined(CONFIG_ROCKCHIP_OTP)
 		struct udevice *dev;
 
@@ -213,14 +217,11 @@ static int rockchip_set_serialno(void)
 		snprintf(serialno_str, sizeof(serialno_str), "%llx", serialno);
 
 		env_set("serial#", serialno_str);
-#ifdef CONFIG_ROCKCHIP_VENDOR_PARTITION
 	}
-#endif
 
 	return ret;
 }
 #endif
-
 
 #if defined(CONFIG_USB_FUNCTION_FASTBOOT)
 int fb_set_reboot_flag(void)
@@ -356,14 +357,26 @@ static void cmdline_handle(void)
 		return;
 
 	/*
-	 * From rk356x, the sd/udisk update flag was moved from
-	 * IDB to Android BCB.
+	 * 1. From rk356x, the sd/udisk recovery update flag was moved from
+	 *    IDB to Android BCB.
+	 *
+	 * 2. Udisk is init at the late boot_from_udisk(), but
+	 *    rockchip_get_boot_mode() actually only read once,
+	 *    we need to update boot mode according to udisk BCB.
 	 */
-	if (get_bcb_recovery_msg() == BCB_MSG_RECOVERY_RK_FWUPDATE) {
-		if (dev_desc->if_type == IF_TYPE_MMC && dev_desc->devnum == 1)
-			env_update("bootargs", "sdfwupdate");
-		else if (dev_desc->if_type == IF_TYPE_USB && dev_desc->devnum == 0)
-			env_update("bootargs", "usbfwupdate");
+	if ((dev_desc->if_type == IF_TYPE_MMC && dev_desc->devnum == 1) ||
+	    (dev_desc->if_type == IF_TYPE_USB && dev_desc->devnum == 0)) {
+		if (get_bcb_recovery_msg() == BCB_MSG_RECOVERY_RK_FWUPDATE) {
+			if (dev_desc->if_type == IF_TYPE_MMC && dev_desc->devnum == 1) {
+				env_update("bootargs", "sdfwupdate");
+			} else if (dev_desc->if_type == IF_TYPE_USB && dev_desc->devnum == 0) {
+				env_update("bootargs", "usbfwupdate");
+				env_set("reboot_mode", "recovery-usb");
+			}
+		} else {
+			if (dev_desc->if_type == IF_TYPE_USB && dev_desc->devnum == 0)
+				env_set("reboot_mode", "normal");
+		}
 	}
 }
 
@@ -376,9 +389,7 @@ int board_late_init(void)
 	rockchip_set_serialno();
 #endif
 	setup_download_mode();
-#if (CONFIG_ROCKCHIP_BOOT_MODE_REG > 0)
-	setup_boot_mode();
-#endif
+
 #ifdef CONFIG_ROCKCHIP_USB_BOOT
 	boot_from_udisk();
 #endif
@@ -390,6 +401,9 @@ int board_late_init(void)
 #endif
 #ifdef CONFIG_ROCKCHIP_EINK_DISPLAY
 	rockchip_eink_show_uboot_logo();
+#endif
+#if (CONFIG_ROCKCHIP_BOOT_MODE_REG > 0)
+	setup_boot_mode();
 #endif
 	env_fixup();
 	soc_clk_dump();
@@ -563,8 +577,8 @@ void arch_preboot_os(uint32_t bootm_state, bootm_headers_t *images)
 	 *
 	 * kernel: 5.10 commit 120dc60d0bdb ("arm64: get rid of TEXT_OFFSET")
 	 * arm64 kernel version:
-	 *	data[10] == 0x00 if kernel version >= 5.10
-	 *	data[10] == 0x08 if kernel version <  5.10
+	 *	data[10] == 0x00 if kernel version >= 5.10: N*2MB align
+	 *	data[10] == 0x08 if kernel version <  5.10: N*2MB + 0x80000(TEXT_OFFSET)
 	 *
 	 * Why fix here?
 	 *   1. this is the common and final path for any boot command.
@@ -693,10 +707,7 @@ int board_init_f_boot_flags(void)
 
 	arch_fpga_init();
 
-	param_parse_pre_serial();
-
-	if (!gd->serial.enable)
-		boot_flags |= GD_FLG_DISABLE_CONSOLE;
+	param_parse_pre_serial(&boot_flags);
 
 	/* The highest priority to turn off (override) console */
 #if defined(CONFIG_DISABLE_CONSOLE)
@@ -867,6 +878,7 @@ int board_do_bootm(int argc, char * const argv[])
 	int format;
 	void *img;
 
+	/* only 'bootm' full image goes further */
 	if (argc != 2)
 		return 0;
 
@@ -1000,9 +1012,6 @@ int fit_write_trusty_rollback_index(u32 trusty_index)
 
 void board_quiesce_devices(void *images)
 {
-	bootm_headers_t *bootm_images = (bootm_headers_t *)images;
-	ulong kernel_addr;
-
 #ifdef CONFIG_ROCKCHIP_PRELOADER_ATAGS
 	/* Destroy atags makes next warm boot safer */
 	atags_destroy();
@@ -1019,6 +1028,10 @@ void board_quiesce_devices(void *images)
 #ifdef CONFIG_ROCKCHIP_HW_DECOMPRESS
 	misc_decompress_cleanup();
 #endif
+#ifdef CONFIG_ARM64
+	bootm_headers_t *bootm_images = (bootm_headers_t *)images;
+	ulong kernel_addr;
+
 	/* relocate kernel after decompress cleanup */
 	kernel_addr = env_get_ulong("kernel_addr_r", 16, 0);
 	if (kernel_addr != bootm_images->ep) {
@@ -1027,6 +1040,7 @@ void board_quiesce_devices(void *images)
 		printf("== DO RELOCATE == Kernel from 0x%08lx to 0x%08lx\n",
 		       kernel_addr, bootm_images->ep);
 	}
+#endif
 
 	hotkey_run(HK_CMDLINE);
 	hotkey_run(HK_CLI_OS_GO);

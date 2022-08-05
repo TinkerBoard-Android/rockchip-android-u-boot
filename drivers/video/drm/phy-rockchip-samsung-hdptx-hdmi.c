@@ -1240,6 +1240,10 @@ static int hdptx_ropll_cmn_config(struct rockchip_hdptx_phy *hdptx, unsigned lon
 static int hdptx_ropll_tmds_mode_config(struct rockchip_hdptx_phy *hdptx, u32 rate)
 {
 	u32 bit_rate = rate & DATA_RATE_MASK;
+	u8 color_depth = (rate & COLOR_DEPTH_MASK) ? 1 : 0;
+
+	if (color_depth)
+		bit_rate = bit_rate * 5 / 4;
 
 	if (!hdptx->pll_locked) {
 		int ret;
@@ -1333,6 +1337,19 @@ static int hdptx_ropll_tmds_mode_config(struct rockchip_hdptx_phy *hdptx, u32 ra
 	hdptx_write(hdptx, LANE_REG061E, 0x08);
 	hdptx_write(hdptx, LANE_REG061F, 0x15);
 	hdptx_write(hdptx, LANE_REG0620, 0xa0);
+
+	hdptx_write(hdptx, LANE_REG0303, 0x2f);
+	hdptx_write(hdptx, LANE_REG0403, 0x2f);
+	hdptx_write(hdptx, LANE_REG0503, 0x2f);
+	hdptx_write(hdptx, LANE_REG0603, 0x2f);
+	hdptx_write(hdptx, LANE_REG0305, 0x03);
+	hdptx_write(hdptx, LANE_REG0405, 0x03);
+	hdptx_write(hdptx, LANE_REG0505, 0x03);
+	hdptx_write(hdptx, LANE_REG0605, 0x03);
+	hdptx_write(hdptx, LANE_REG0306, 0x1c);
+	hdptx_write(hdptx, LANE_REG0406, 0x1c);
+	hdptx_write(hdptx, LANE_REG0506, 0x1c);
+	hdptx_write(hdptx, LANE_REG0606, 0x1c);
 
 	return hdptx_post_enable_lane(hdptx);
 }
@@ -1556,6 +1573,28 @@ static int hdptx_ropll_frl_mode_config(struct rockchip_hdptx_phy *hdptx, u32 rat
 	hdptx_write(hdptx, LANE_REG061B, 0x01);
 	hdptx_write(hdptx, LANE_REG061F, 0x15);
 	hdptx_write(hdptx, LANE_REG0620, 0xa0);
+
+	hdptx_write(hdptx, LANE_REG0303, 0x2f);
+	hdptx_write(hdptx, LANE_REG0403, 0x2f);
+	hdptx_write(hdptx, LANE_REG0503, 0x2f);
+	hdptx_write(hdptx, LANE_REG0603, 0x2f);
+	hdptx_write(hdptx, LANE_REG0305, 0x03);
+	hdptx_write(hdptx, LANE_REG0405, 0x03);
+	hdptx_write(hdptx, LANE_REG0505, 0x03);
+	hdptx_write(hdptx, LANE_REG0605, 0x03);
+	hdptx_write(hdptx, LANE_REG0306, 0xfc);
+	hdptx_write(hdptx, LANE_REG0406, 0xfc);
+	hdptx_write(hdptx, LANE_REG0506, 0xfc);
+	hdptx_write(hdptx, LANE_REG0606, 0xfc);
+
+	hdptx_write(hdptx, LANE_REG0305, 0x4f);
+	hdptx_write(hdptx, LANE_REG0405, 0x4f);
+	hdptx_write(hdptx, LANE_REG0505, 0x4f);
+	hdptx_write(hdptx, LANE_REG0605, 0x4f);
+	hdptx_write(hdptx, LANE_REG0304, 0x14);
+	hdptx_write(hdptx, LANE_REG0404, 0x14);
+	hdptx_write(hdptx, LANE_REG0504, 0x14);
+	hdptx_write(hdptx, LANE_REG0604, 0x14);
 
 	return hdptx_post_power_up(hdptx);
 }
@@ -1860,8 +1899,7 @@ static int rockchip_hdptx_phy_hdmi_probe(struct udevice *dev)
 {
 	struct rockchip_hdptx_phy *hdptx = dev_get_priv(dev);
 	struct rockchip_phy *phy;
-	struct udevice *syscon, *sys_child;
-	char name[30], *str;
+	struct udevice *syscon;
 	int ret;
 
 	hdptx->id = of_alias_get_id(ofnode_to_np(dev->node), "hdptxhdmi");
@@ -1933,12 +1971,32 @@ static int rockchip_hdptx_phy_hdmi_probe(struct udevice *dev)
 		return ret;
 	}
 
-	sprintf(name, "hdmiphypll_clk%d", hdptx->id);
+	return 0;
+}
+
+static int rockchip_hdptx_phy_hdmi_bind(struct udevice *parent)
+{
+	struct udevice *child;
+	ofnode subnode;
+	char name[30], *str;
+	int id, ret;
+
+	id = of_alias_get_id(ofnode_to_np(parent->node), "hdptxhdmi");
+	if (id < 0)
+		id = 0;
+
+	sprintf(name, "hdmiphypll_clk%d", id);
 	str = strdup(name);
-	/* The phy pll driver does not have a device node, so bind it here */
-	ret = device_bind_driver(dev, "clk_hdptx", str, &sys_child);
+
+	subnode = ofnode_find_subnode(parent->node, "clk-port");
+	if (!ofnode_valid(subnode)) {
+		printf("%s: no subnode for %s", __func__, parent->name);
+		return -ENXIO;
+	}
+
+	ret = device_bind_driver_to_node(parent, "clk_hdptx", str, subnode, &child);
 	if (ret) {
-		dev_err(dev, "Warning: No phy pll driver: ret=%d\n", ret);
+		printf("%s: clk-port cannot bind its driver\n", __func__);
 		return ret;
 	}
 
@@ -1957,6 +2015,7 @@ U_BOOT_DRIVER(rockchip_hdptx_phy_hdmi) = {
 	.id		= UCLASS_PHY,
 	.of_match	= rockchip_hdptx_phy_hdmi_ids,
 	.probe		= rockchip_hdptx_phy_hdmi_probe,
+	.bind		= rockchip_hdptx_phy_hdmi_bind,
 	.priv_auto_alloc_size = sizeof(struct rockchip_hdptx_phy),
 };
 

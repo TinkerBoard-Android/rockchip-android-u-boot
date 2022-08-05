@@ -211,7 +211,7 @@ config ROCKCHIP_RK3308
 	bool "Support Rockchip RK3308"
 	select ARM64 if !ARM64_BOOT_AARCH32
 	select ARM_SMCCC
-	select GICV2
+	imply GICV2
 	select SUPPORT_SPL if !ARM64_BOOT_AARCH32
 	select SUPPORT_TPL if !ARM64_BOOT_AARCH32
 	select SPL if !ARM64_BOOT_AARCH32
@@ -468,7 +468,6 @@ endif
 config ROCKCHIP_RV1106
 	bool "Support Rockchip RV1106"
 	select CPU_V7
-	select ARM_ZERO_CNTVOFF
 	select DEBUG_UART_BOARD_INIT
 	imply SUPPORT_SPL
 	imply SUPPORT_TPL
@@ -711,6 +710,14 @@ config RKIMG_ANDROID_BOOTMODE_LEGACY
 	  Rockchip set "androidboot.mode=" as "charger" or boot media for android,
 	  which is a rockchip private solution(SDK < 8.1) and deprecated.
 
+config ROCKCHIP_BOOTDEV
+	string "Set the boot device for multiple storage board"
+	default ""
+	help
+	  On the multiple storage on board, set this to determine what we really
+	  want to be the boot device, which contains kernel, rootfs and etc.
+	  Fall through to get from preloader or scan list when it's NULL.
+
 config ROCKCHIP_RESOURCE_IMAGE
 	bool "Enable support for rockchip resource image"
 	depends on RKIMG_BOOTLOADER
@@ -855,6 +862,13 @@ config ROCKCHIP_PRELOADER_ATAGS
 	  This enable support Rockchip atags among pre-loaders, i.e. ddr, miniloader, ATF,
 	  tos, U-Boot, etc. It delivers boot and configure information, shared with pre-loaders
 	  and finally ends with U-Boot.
+
+config ROCKCHIP_META
+	bool "Rockchip Meta"
+	depends on SPL_KERNEL_BOOT && SPL_LIBDISK_SUPPORT
+	help
+	  This support to load Rockchip meta data which like isp parameter, peripheral
+	  parameters, etc.
 
 config ROCKCHIP_PRELOADER_SERIAL
 	bool "Rockchip pre-loader serial"

@@ -98,7 +98,7 @@ struct rv1126_sdram_params sdram_configs[] = {
 	#include "sdram_inc/rv1126/sdram-rv1126-lpddr3-detect-924.inc"
 	#include "sdram_inc/rv1126/sdram-rv1126-lpddr3-detect-1056.inc"
 };
-#elif (CONFIG_ROCKCHIP_TPL_INIT_DRAM_TYPE == 7)
+#elif (CONFIG_ROCKCHIP_TPL_INIT_DRAM_TYPE == 7) || (CONFIG_ROCKCHIP_TPL_INIT_DRAM_TYPE == 8)
 struct rv1126_sdram_params sdram_configs[] = {
 	#include "sdram_inc/rv1126/sdram-rv1126-lpddr4-detect-328.inc"
 	#include "sdram_inc/rv1126/sdram-rv1126-lpddr4-detect-396.inc"
@@ -3225,15 +3225,15 @@ static void pctl_modify_trfc(struct ddr_pctl_regs *pctl_regs,
 				tmp = pctl_regs->pctl[i][1];
 				/* t_xs_x32 */
 				tmp &= ~((u32)0x7f);
-				tmp |= ((txsnr + 63) / 64) & 0x7f;
+				tmp |= ((txsnr + 63) / 64 + 1) & 0x7f;
 
 				if (dram_type == DDR4) {
 					/* t_xs_abort_x32 */
 					tmp &= ~((u32)(0x7f << 16));
-					tmp |= (((txs_abort_fast + 63) / 64) & 0x7f) << 16;
+					tmp |= (((txs_abort_fast + 63) / 64 + 1) & 0x7f) << 16;
 					/* t_xs_fast_x32 */
 					tmp &= ~((u32)(0x7f << 24));
-					tmp |= (((txs_abort_fast + 63) / 64) & 0x7f) << 24;
+					tmp |= (((txs_abort_fast + 63) / 64 + 1) & 0x7f) << 24;
 				}
 
 				pctl_regs->pctl[i][1] = tmp;
@@ -3557,7 +3557,7 @@ int sdram_init(void)
 
 	sdram_params = &sdram_configs[0];
 	#if (CONFIG_ROCKCHIP_TPL_INIT_DRAM_TYPE == 8)
-	for (j = 0; j < ARRAY_SIZE(sdram_configs); j++)
+	for (int j = 0; j < ARRAY_SIZE(sdram_configs); j++)
 		sdram_configs[j].base.dramtype = LPDDR4X;
 	#endif
 	if (sdram_params->base.dramtype == DDR3 ||

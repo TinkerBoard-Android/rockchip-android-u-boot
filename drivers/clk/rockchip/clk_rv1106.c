@@ -26,6 +26,7 @@ DECLARE_GLOBAL_DATA_PTR;
 static struct rockchip_pll_rate_table rv1106_pll_rates[] = {
 	/* _mhz, _refdiv, _fbdiv, _postdiv1, _postdiv2, _dsmpd, _frac */
 	RK3036_PLL_RATE(1188000000, 1, 99, 2, 1, 1, 0),
+	RK3036_PLL_RATE(1104000000, 1, 92, 2, 1, 1, 0),
 	RK3036_PLL_RATE(1008000000, 1, 84, 2, 1, 1, 0),
 	RK3036_PLL_RATE(1000000000, 3, 250, 2, 1, 1, 0),
 	RK3036_PLL_RATE(816000000, 1, 68, 2, 1, 1, 0),
@@ -995,6 +996,44 @@ static ulong rv1106_vop_set_clk(struct rv1106_clk_priv *priv,
 
 	return rv1106_vop_get_clk(priv, clk_id);
 }
+
+static ulong rv1106_decom_get_clk(struct rv1106_clk_priv *priv)
+{
+	struct rv1106_cru *cru = priv->cru;
+	u32 sel, con, prate;
+
+	con = readl(&cru->peri_clksel_con[7]);
+	sel = (con & DCLK_DECOM_SEL_MASK) >>
+	      DCLK_DECOM_SEL_SHIFT;
+	if (sel == DCLK_DECOM_SEL_400M)
+		prate = 400 * MHz;
+	else if (sel == DCLK_DECOM_SEL_200M)
+		prate = 200 * MHz;
+	else if (sel == DCLK_DECOM_SEL_100M)
+		prate = 100 * MHz;
+	else
+		prate = OSC_HZ;
+	return prate;
+}
+
+static ulong rv1106_decom_set_clk(struct rv1106_clk_priv *priv, ulong rate)
+{
+	struct rv1106_cru *cru = priv->cru;
+	u32 sel;
+
+	if (rate >= 396 * MHz)
+		sel = DCLK_DECOM_SEL_400M;
+	else if (rate >= 198 * MHz)
+		sel = DCLK_DECOM_SEL_200M;
+	else if (rate >= 99 * MHz)
+		sel = DCLK_DECOM_SEL_100M;
+	else
+		sel = DCLK_DECOM_SEL_24M;
+	rk_clrsetreg(&cru->peri_clksel_con[7], DCLK_DECOM_SEL_MASK,
+		     (sel << DCLK_DECOM_SEL_SHIFT));
+
+	return rv1106_decom_get_clk(priv);
+}
 #endif
 
 static ulong rv1106_clk_get_rate(struct clk *clk)
@@ -1087,6 +1126,9 @@ static ulong rv1106_clk_get_rate(struct clk *clk)
 	case ACLK_VOP_ROOT:
 	case ACLK_VOP:
 		rate = rv1106_vop_get_clk(priv, clk->id);
+		break;
+	case DCLK_DECOM:
+		rate = rv1106_decom_get_clk(priv);
 		break;
 #endif
 	default:
@@ -1182,6 +1224,9 @@ static ulong rv1106_clk_set_rate(struct clk *clk, ulong rate)
 	case ACLK_VOP_ROOT:
 	case ACLK_VOP:
 		rate = rv1106_vop_set_clk(priv, clk->id, rate);
+		break;
+	case DCLK_DECOM:
+		rate = rv1106_decom_set_clk(priv, rate);
 		break;
 #endif
 	default:

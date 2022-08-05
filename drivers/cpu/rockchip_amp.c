@@ -41,7 +41,9 @@ DECLARE_GLOBAL_DATA_PTR;
  *	The AMP feature requires trust support.
  */
 
-#define AMP_PART	"amp"
+#define AMP_PART		"amp"
+#define FIT_HEADER_SIZE		SZ_4K
+
 #define gicd_readl(offset)	readl((void *)GICD_BASE + (offset))
 #define gicd_writel(v, offset)	writel(v, (void *)GICD_BASE + (offset))
 #define LINXU_AMP_NODES		"/rockchip-amp/amp-cpus"
@@ -78,8 +80,8 @@ static u32 fit_get_u32_default(const void *fit, int noffset,
 static int parse_cpus_boot_by_linux(void)
 {
 	const void *fdt = gd->fdt_blob;
-	int noffset, cpu;
-	int mpidr, i = 0;
+	int noffset, cpu, i = 0;
+	u64 mpidr;
 
 	memset(g_cpus_boot_by_linux, 0xff, sizeof(g_cpus_boot_by_linux));
 	noffset = fdt_path_offset(fdt, LINXU_AMP_NODES);
@@ -87,11 +89,11 @@ static int parse_cpus_boot_by_linux(void)
 		return 0;
 
 	fdt_for_each_subnode(cpu, fdt, noffset) {
-		mpidr = fdtdec_get_uint(fdt, cpu, "id", 0xffffffff);
+		mpidr = fdtdec_get_uint64(fdt, cpu, "id", 0xffffffff);
 		if (mpidr == 0xffffffff)
 			continue;
 		g_cpus_boot_by_linux[i++] = mpidr;
-		printf("CPU[0x%x] is required boot by Linux\n", mpidr);
+		printf("CPU[0x%llx] is required boot by Linux\n", mpidr);
 	}
 
 	return 0;
@@ -360,7 +362,9 @@ int amp_cpus_on(void)
 	struct blk_desc *dev_desc;
 	bootm_headers_t images;
 	disk_partition_t part;
-	void *fit;
+	void *hdr, *fit;
+	int offset, cnt;
+	int totalsize;
 	int ret = 0;
 
 	dev_desc = rockchip_get_bootdev();
@@ -370,21 +374,45 @@ int amp_cpus_on(void)
 	if (part_get_info_by_name(dev_desc, AMP_PART, &part) < 0)
 		return -ENODEV;
 
-	fit = malloc(part.size * part.blksz);
-	if (!fit) {
-		AMP_E("No memory, please increase CONFIG_SYS_MALLOC_LEN\n");
+	hdr = memalign(ARCH_DMA_MINALIGN, FIT_HEADER_SIZE);
+	if (!hdr)
 		return -ENOMEM;
-	}
 
-	if (blk_dread(dev_desc, part.start, part.size, fit) != part.size) {
+	/* get totalsize */
+	offset = part.start;
+	cnt = DIV_ROUND_UP(FIT_HEADER_SIZE, part.blksz);
+	if (blk_dread(dev_desc, offset, cnt, hdr) != cnt) {
 		ret = -EIO;
-		goto out;
+		goto out2;
 	}
 
-	if (fdt_check_header(fit)) {
+	if (fdt_check_header(hdr)) {
 		AMP_E("Not fit\n");
 		ret = -EINVAL;
-		goto out;
+		goto out2;
+	}
+
+	if (fit_get_totalsize(hdr, &totalsize)) {
+		AMP_E("No totalsize\n");
+		ret = -EINVAL;
+		goto out2;
+	}
+
+	/* load image */
+	fit = memalign(ARCH_DMA_MINALIGN, ALIGN(totalsize, part.blksz));
+	if (!fit) {
+		printf("No memory\n");
+		ret = -ENOMEM;
+		goto out2;
+	}
+
+	memcpy(fit, hdr, FIT_HEADER_SIZE);
+
+	offset += cnt;
+	cnt = DIV_ROUND_UP(totalsize, part.blksz) - cnt;
+	if (blk_dread(dev_desc, offset, cnt, fit + FIT_HEADER_SIZE) != cnt) {
+		ret = -EIO;
+		goto out1;
 	}
 
 	/* prase linux info */
@@ -398,7 +426,7 @@ int amp_cpus_on(void)
 	ret = boot_get_loadable(0, NULL, &images, IH_ARCH_DEFAULT, NULL, NULL);
 	if (ret) {
 		AMP_E("Load loadables, ret=%d\n", ret);
-		goto out;
+		goto out1;
 	}
 	flush_dcache_all();
 
@@ -406,8 +434,10 @@ int amp_cpus_on(void)
 	ret = brought_up_all_amp(images.fit_hdr_os, images.fit_uname_cfg);
 	if (ret)
 		AMP_E("Brought up amps, ret=%d\n", ret);
-out:
+out1:
 	free(fit);
+out2:
+	free(hdr);
 
 	return ret;
 }
