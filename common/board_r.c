@@ -235,6 +235,20 @@ static int initr_post_backlog(void)
 }
 #endif
 
+#ifdef CONFIG_ROCKCHIP_RK3288
+static int initr_unlock_current_limit(void)
+{
+        usb_current_limit_unlock(true);
+        return 0;
+}
+
+static int initr_lock_current_limit(void)
+{
+        usb_current_limit_unlock(false);
+        return 0;
+}
+#endif
+
 #if defined(CONFIG_SYS_INIT_RAM_LOCK) && defined(CONFIG_E500)
 static int initr_unlock_ram_in_cache(void)
 {
@@ -856,6 +870,10 @@ static init_fnc_t init_sequence_r[] = {
 	 */
 	board_initr_caches_fixup,
 
+#ifdef CONFIG_ROCKCHIP_RK3288
+	initr_unlock_current_limit,
+#endif
+
 #if defined(CONFIG_SYS_INIT_RAM_LOCK) && defined(CONFIG_E500)
 	initr_unlock_ram_in_cache,
 #endif
@@ -1058,6 +1076,9 @@ static init_fnc_t init_sequence_r[] = {
 #endif
 #ifdef CONFIG_PS2KBD
 	initr_kbd,
+#endif
+#ifdef CONFIG_ROCKCHIP_RK3288
+        initr_lock_current_limit,
 #endif
 	run_main_loop,
 };

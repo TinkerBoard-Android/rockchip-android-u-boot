@@ -653,7 +653,9 @@ static int sleep_thread(struct fsg_common *common)
 {
 	int	rc = 0;
 	int i = 0, k = 0;
+#ifdef CONFIG_ROCKCHIP_RK3399
 	uint32_t reg_soc_status3;
+#endif
 
 	/* Wait until a signal arrives or we are woken up */
 	for (;;) {
@@ -675,11 +677,13 @@ static int sleep_thread(struct fsg_common *common)
 			if (!g_dnl_board_usb_cable_connected())
 				return -EIO;
 
+#ifdef CONFIG_ROCKCHIP_RK3399
 			reg_soc_status3 = readl((void *)CONFIG_GRF_SOC_STATUS3_REG);
 			if (!(reg_soc_status3 & (1 << 12))) {
 				printf("Usb cable disconnected, exit ums.\n");
 				return -EIO;
 			}
+#endif
 
 			k = 0;
 		}
@@ -719,7 +723,7 @@ static int sleep_thread_timeout(struct fsg_common *common)
 			j++;
 		}
 
-		if (j == 30) //about 2 seconds
+		if (j == 40) //about 2 seconds
 			return -ETIMEDOUT;
 
 		usb_gadget_handle_interrupts(0);
