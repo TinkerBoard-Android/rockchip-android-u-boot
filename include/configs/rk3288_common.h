@@ -61,7 +61,10 @@
 	"pxefile_addr_r=0x00100000\0" \
 	"fdt_addr_r=0x08300000\0" \
 	"kernel_addr_r=0x02008000\0" \
-	"ramdisk_addr_r=0x0a200000\0"
+	"ramdisk_addr_r=0x0a200000\0" \
+	"conf_addr=0x01200000\0" \
+	"cmdline_addr=0x01800000\0" \
+	"fdt_overlay_addr=0x08200000\0"
 
 #include <config_distro_bootcmd.h>
 

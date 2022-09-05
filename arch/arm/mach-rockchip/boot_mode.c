@@ -236,7 +236,7 @@ int rockchip_get_boot_mode(void)
 		boot_mode[PM] = BOOT_MODE_RECOVERY;
 #ifdef CONFIG_ROCKCHIP_RK3288
 		if (check_force_enter_ums_mode())
-			boot_mode[PH] = BOOT_MODE_UMS;
+			boot_mode[PH] = BOOT_MODE_UMS_HW;
 #endif
 	} else {
 		switch (reg_boot_mode) {
@@ -276,7 +276,7 @@ int rockchip_get_boot_mode(void)
 #elif defined(CONFIG_ROCKCHIP_RK3288)
 			if (check_force_enter_ums_mode()) {
 #endif
-				boot_mode[PH] = BOOT_MODE_UMS;
+				boot_mode[PH] = BOOT_MODE_UMS_HW;
 				clear_boot_reg = 1;
 			} else {
 				printf("boot mode: None\n");
