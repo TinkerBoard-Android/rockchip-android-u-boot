@@ -76,6 +76,53 @@ struct public_phy_data {
 	bool phy_init;
 };
 
+extern bool powertip_panel_connected;
+extern bool rpi_panel_connected;
+extern unsigned int panel_i2c_busnum;
+#if defined(CONFIG_DRM_I2C_SN65DSI84)
+extern void sn65dsi84_setup_desc( struct drm_display_mode *dmode);
+extern bool sn65dsi84_is_connected(void);
+#else
+void sn65dsi84_setup_desc( struct drm_display_mode *dmode)
+{
+	return;
+}
+
+static bool sn65dsi84_is_connected(void)
+{
+	return false;
+}
+#endif
+
+#if defined(CONFIG_DRM_I2C_SN65DSI86)
+extern void sn65dsi86_setup_desc( struct drm_display_mode *dmode);
+extern bool sn65dsi86_is_connected(void);
+#else
+void sn65dsi86_setup_desc( struct drm_display_mode *dmode)
+{
+	return;
+}
+
+static bool sn65dsi86_is_connected(void)
+{
+	return false;
+}
+#endif
+
+#if defined(CONFIG_DRM_I2C_LT9211)
+extern void lt9211_set_videomode( struct drm_display_mode *dmode);
+extern bool lt9211_is_connected(void);
+#else
+void lt9211_set_videomode( struct drm_display_mode *dmode)
+{
+       return;
+}
+static bool lt9211_is_connected(void)
+{
+       return false;
+}
+#endif
+
 void rockchip_display_make_crc32_table(void)
 {
 	uint32_t c;
@@ -464,6 +511,20 @@ int rockchip_ofnode_get_display_mode(ofnode node, struct drm_display_mode *mode)
 	mode->flags = flags;
 	mode->vrefresh = drm_mode_vrefresh(mode);
 
+	if (sn65dsi84_is_connected())
+		sn65dsi84_setup_desc(mode);
+
+	if (sn65dsi86_is_connected())
+		sn65dsi86_setup_desc(mode);
+
+	if (lt9211_is_connected())
+		lt9211_set_videomode(mode);
+
+
+	printk("display_get_timing_from_dts hactive = %d vactive = %d pixelclock = %d flags =0x%x\n", hactive, vactive, pixelclock,(unsigned int) flags);
+	printk("display_get_timing_from_dts hfront_porch = %d hback_porch = %d hsync_len = %d\n", hfront_porch, hback_porch, hsync_len);
+	printk("display_get_timing_from_dts vfront_porch = %d vback_porch = %d vsync_len = %d\n", vfront_porch, vback_porch, vsync_len);
+
 	return 0;
 }
 
@@ -505,7 +566,13 @@ static int display_get_timing_from_dts(struct panel_state *panel_state,
 	ofnode dt, timing;
 	int ret;
 
-	dt = dev_read_subnode(panel->dev, "display-timings");
+	if (rpi_panel_connected) {
+		dt = dev_read_subnode(panel->dev, "rpi-display-timings");
+	} else if (powertip_panel_connected) {
+		dt = dev_read_subnode(panel->dev, "powertip-display-timings");
+	} else{
+		dt = dev_read_subnode(panel->dev, "display-timings");
+	}
 	if (ofnode_valid(dt)) {
 		ret = ofnode_parse_phandle_with_args(dt, "native-mode", NULL,
 						     0, 0, &args);
@@ -1259,6 +1326,60 @@ static int load_kernel_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	return 0;
 }
 
+int  read_bmp_header(struct bmp_header *header)
+{
+	#define BMP_SIGNATURE_0 'B'
+	#define BMP_SIGNATURE_1 'M'
+	struct blk_desc *dev_desc;
+	disk_partition_t part_info;
+	int cnt, ret;
+	//char* buf = (char*) header;
+
+	dev_desc = rockchip_get_bootdev();
+	ret = part_get_info_by_name(dev_desc, "splash", &part_info);
+	if (ret < 0) {
+		printf("read_bmp_header: get splash partition fail.\n");
+		return 0;
+	}
+
+	cnt = DIV_ROUND_UP(RK_BLK_SIZE, dev_desc->blksz);
+	//bmsg = memalign(ARCH_DMA_MINALIGN, cnt * dev_desc->blksz);
+	if (blk_dread(dev_desc, part_info.start , cnt, header) != cnt) {
+		printf("read_bmp_header: fail to read BMP header sector");
+		return 0;
+	}
+
+	if (header->signature[0] !=  BMP_SIGNATURE_0 ||
+		header->signature[1] !=  BMP_SIGNATURE_1) {
+		printf("read_bmp_header:BMP singature incorrectly 0x%x 0x%x", header->signature[0], header->signature[1]);
+		return 0;
+	}
+
+	return RK_BLK_SIZE;
+}
+
+int  read_bmp_from_splash(void *buf, int offset, int len)
+{
+	struct blk_desc *dev_desc;
+	disk_partition_t part_info;
+	int cnt, ret, sector;
+
+	dev_desc = rockchip_get_bootdev();
+	ret = part_get_info_by_name(dev_desc, "splash", &part_info);
+	if (ret < 0) {
+		printf("read_bmp_from_splash: get splash partition fail.\n");
+		return 0;
+	}
+	cnt = DIV_ROUND_UP(len, dev_desc->blksz);
+	//bmsg = memalign(ARCH_DMA_MINALIGN, cnt * dev_desc->blksz);
+	sector = blk_dread(dev_desc, part_info.start+offset , cnt, buf);
+	if (sector != cnt) {
+		printf("read_bmp_from_splash: cshould read %d sector but read %d setcor only\n", cnt, sector);
+	}
+
+	return len;
+}
+
 static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 {
 #ifdef CONFIG_ROCKCHIP_RESOURCE_IMAGE
@@ -1269,6 +1390,7 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	int ret = 0;
 	int reserved = 0;
 	int dst_size;
+	bool show_bmp_from_splash = true;
 
 	if (!logo || !bmp_name)
 		return -EINVAL;
@@ -1285,6 +1407,12 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	if (!header)
 		return -ENOMEM;
 
+	len =  read_bmp_header(header);
+	if (len == 0) {
+		show_bmp_from_splash = false;
+		len = rockchip_read_resource_file(header, bmp_name, 0, RK_BLK_SIZE);
+	}
+
 	len = rockchip_read_resource_file(header, bmp_name, 0, RK_BLK_SIZE);
 	if (len != RK_BLK_SIZE) {
 		ret = -EINVAL;
@@ -1296,6 +1424,7 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	logo->height = get_unaligned_le32(&header->height);
 	dst_size = logo->width * logo->height * logo->bpp >> 3;
 	reserved = get_unaligned_le32(&header->reserved);
+	printf("load_bmp_logo  %x %x bit_count=%x width=%x height=%x file_size=%x\n", header->signature[0], header->signature[1],header->bit_count, header->width, header->height, header->file_size);
 	if (logo->height < 0)
 	    logo->height = -logo->height;
 	size = get_unaligned_le32(&header->file_size);
@@ -1312,7 +1441,10 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 		dst = pdst;
 	}
 
-	len = rockchip_read_resource_file(pdst, bmp_name, 0, size);
+	if (show_bmp_from_splash)
+		len = read_bmp_from_splash(pdst, 0, size);
+	else
+		len = rockchip_read_resource_file(pdst, bmp_name, 0, size);
 	if (len != size) {
 		printf("failed to load bmp %s\n", bmp_name);
 		ret = -ENOENT;
@@ -1427,8 +1559,16 @@ static struct rockchip_panel *rockchip_of_find_panel(struct udevice *dev)
 	struct udevice *panel_dev;
 	int ret;
 
+#if 0
+	struct udevice *i2c_dev;
+
+	printf(" rockchip_of_find_panel  sn65dsi84@2c\n");
+	ret = uclass_get_device_by_name(UCLASS_I2C_GENERIC, "sn65dsi84@2c", &i2c_dev);
+#endif
+
 	panel_node = dev_read_subnode(dev, "panel");
 	if (ofnode_valid(panel_node) && ofnode_is_available(panel_node)) {
+		printf("rockchip_of_find_panel  panel_node->np->full_name=%s panel_node->np->name =%s+\n", panel_node.np->full_name, panel_node.np->name);
 		ret = uclass_get_device_by_ofnode(UCLASS_PANEL, panel_node,
 						  &panel_dev);
 		if (!ret)
@@ -1688,6 +1828,31 @@ static int rockchip_display_fixup_dts(void *blob)
 }
 #endif
 
+int  load_mipi2lvds_driver(/*struct udevice *dev,*/char* device_name)
+{
+	struct udevice *i2c_dev;
+	/*ofnode panel_node;
+	struct udevice *panel_dev;*/
+	int ret;
+
+	printf("load_mipi2lvds_driver: %s\n", device_name);
+	ret = uclass_get_device_by_name(UCLASS_I2C_GENERIC, device_name, &i2c_dev);
+
+	/*panel_node = dev_read_subnode(dev, "panel");
+	if (ofnode_valid(panel_node) && ofnode_is_available(panel_node)) {
+		printf("rockchip_of_find_panel  panel_node->np->full_name=%s panel_node->np->name =%s+\n", panel_node.np->full_name, panel_node.np->name);
+		ret = uclass_get_device_by_ofnode(UCLASS_PANEL, panel_node,
+						  &panel_dev);
+		printf("rockchip_of_find_panel-\n");
+		if (!ret)
+			goto found;
+	}*/
+	printf("load_mipi2lvds_driver: %s : ret=%d\n", device_name, ret);
+	return ret;
+}
+
+extern int  panel_i2c_reg_read(struct udevice *dev, uint offset);
+
 static int rockchip_display_probe(struct udevice *dev)
 {
 	struct video_priv *uc_priv = dev_get_uclass_priv(dev);
@@ -1712,6 +1877,7 @@ static int rockchip_display_probe(struct udevice *dev)
 	rockchip_display_fixup_dts((void *)blob);
 #endif
 
+	printf("rockchip_display_probe\n");
 	/* Before relocation we don't need to do anything */
 	if (!(gd->flags & GD_FLG_RELOC))
 		return 0;
@@ -1729,9 +1895,59 @@ static int rockchip_display_probe(struct udevice *dev)
 	if (!ofnode_valid(route_node))
 		return -ENODEV;
 
+	#if defined(CONFIG_DRM_I2C_SN65DSI84)
+	load_mipi2lvds_driver("sn65dsi84@2c");
+	#endif
+
+	#if defined(CONFIG_DRM_I2C_SN65DSI86)
+	load_mipi2lvds_driver("sn65dsi86@2d");
+	#endif
+
+	#if defined(CONFIG_DRM_I2C_LT9211)
+	load_mipi2lvds_driver("lt9211@2d");
+	#endif
+
 	ofnode_for_each_subnode(node, route_node) {
 		if (!ofnode_is_available(node))
 			continue;
+		if (!strncmp(node.np->name, "route-dsi", 9)) {
+			struct udevice *powertip_dev;
+			struct udevice *rpi_dev;
+			int powertip_buffer = 0;
+			int rpi_buffer = 0;
+
+			if ( ofnode_read_bool(node, "rk3288_tinker_baord"))
+				panel_i2c_busnum = ofnode_read_u32_default(node, "i2c_busnum", -1);
+
+			printf("rockchip_display_probe: panel_i2c_busnum = %d \n", panel_i2c_busnum);
+
+			if (sn65dsi84_is_connected() || sn65dsi86_is_connected() || lt9211_is_connected()) {
+				printf("rockchip_display_probe: sn65dsi8x_lt9211_is_connected\n");
+			} else {
+				i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &rpi_dev);//rpi
+				rpi_buffer = panel_i2c_reg_read(rpi_dev, 0x80);
+
+				i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &powertip_dev);//powertip
+				powertip_buffer = panel_i2c_reg_read(powertip_dev, 0x4);
+				printf("rockchip_display_probe rpi_buffer=%d  powertip_buffer=%d\n",rpi_buffer, powertip_buffer);
+
+				if (rpi_buffer == 0xDE  || rpi_buffer == 0xC3) {
+					rpi_panel_connected = true;
+				}  else if ((powertip_buffer > 0) && (powertip_buffer & 0xF0) == 0x80) {
+					powertip_panel_connected = true;
+				}
+			}
+
+			if (!powertip_panel_connected &&
+				!rpi_panel_connected &&
+				!sn65dsi84_is_connected() &&
+				!sn65dsi86_is_connected() &&
+				!lt9211_is_connected()) {
+				    printf("rockchip_display_probe: no dsi panel and no sn65dsi8x or lt9211 connected\n");
+					continue;
+			}
+		}
+
 		phandle = ofnode_read_u32_default(node, "connect", -1);
 		if (phandle < 0) {
 			printf("Warn: can't find connect node's handle\n");
@@ -1814,12 +2030,17 @@ static int rockchip_display_probe(struct udevice *dev)
 		memset(s, 0, sizeof(*s));
 
 		INIT_LIST_HEAD(&s->head);
-		ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);
-		if (!ret)
-			memcpy(s->ulogo_name, name, strlen(name));
-		ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);
-		if (!ret)
-			memcpy(s->klogo_name, name, strlen(name));
+		if (sn65dsi84_is_connected() || sn65dsi86_is_connected() || lt9211_is_connected()) {
+			memcpy(s->ulogo_name, "logo.bmp", strlen("logo.bmp"));
+			memcpy(s->klogo_name, "logo_kernel.bmp", strlen("logo_kernel.bmp"));
+		} else {
+			ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);
+			if (!ret)
+				memcpy(s->ulogo_name, name, strlen(name));
+			ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);
+			if (!ret)
+				memcpy(s->klogo_name, name, strlen(name));
+		}
 		ret = ofnode_read_string_index(node, "logo,mode", 0, &name);
 		if (!strcmp(name, "fullscreen"))
 			s->logo_mode = ROCKCHIP_DISPLAY_FULLSCREEN;

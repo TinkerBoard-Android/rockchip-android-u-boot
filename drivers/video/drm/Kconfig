@@ -127,6 +127,18 @@ config DRM_ROCKCHIP_DW_MIPI_DSI
 	 enable MIPI DSI on RK3288 based SoC, you should selet this
 	 option.
 
+config DRM_I2C_SN65DSI84
+        bool "ASUS sn65dsi84 Support"
+        depends on DRM_ROCKCHIP
+
+config DRM_I2C_SN65DSI86
+        bool "ASUS sn65dsi86 Support"
+        depends on DRM_ROCKCHIP
+
+config DRM_I2C_LT9211
+        bool "ASUS lt9211 Support"
+        depends on DRM_ROCKCHIP
+
 config DRM_ROCKCHIP_DW_MIPI_DSI2
 	tristate "Rockchip specific extensions for Synopsys DW MIPI DSI2"
 	depends on DRM_ROCKCHIP

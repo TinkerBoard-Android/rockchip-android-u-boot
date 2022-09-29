@@ -25,6 +25,45 @@
 #include "rockchip_connector.h"
 #include "rockchip_panel.h"
 
+#include <i2c.h>
+
+extern bool powertip_panel_connected;
+extern bool rpi_panel_connected;
+extern unsigned int panel_i2c_busnum;
+extern unsigned int powertip_id;
+
+#if defined(CONFIG_DRM_I2C_LT9211)
+extern bool lt9211_is_connected(void);
+extern void lt9211_bridge_enable(void);
+extern void lt9211_bridge_disable(void);
+extern void lt9211_lvds_power_on(void);
+extern void lt9211_lvds_power_off(void);
+#else
+static bool lt9211_is_connected(void) {
+       return false;
+}
+extern void lt9211_bridge_enable(void) {
+       return;
+}
+extern void lt9211_bridge_disable(void) {
+       return;
+}
+extern void lt9211_lvds_power_on(void) {
+       return;
+}
+extern void lt9211_lvds_power_off(void) {
+       return;
+}
+#endif
+
+struct pwseq {
+       unsigned int t1;//VCC on to start lvds signal
+       unsigned int t2;//LVDS signal(start) to turn Backlihgt on
+       unsigned int t3;//Backlihgt(off) to stop lvds signal
+       unsigned int t4;//LVDS signal to turn VCC off
+       unsigned int t5;//VCC off to turn VCC on
+};
+
 struct rockchip_cmd_header {
 	u8 data_type;
 	u8 delay_ms;
@@ -45,6 +84,7 @@ struct rockchip_panel_plat {
 	bool power_invert;
 	u32 bus_format;
 	unsigned int bpc;
+	struct pwseq pwseq_delay;
 
 	struct {
 		unsigned int prepare;
@@ -72,6 +112,39 @@ struct rockchip_panel_priv {
 	struct gpio_desc spi_scl_gpio;
 	struct gpio_desc spi_cs_gpio;
 };
+
+void panel_i2c_reg_write(struct udevice *dev, uint offset, uint value)
+{
+	#define PANEL_I2C_WRITE_RETRY_COUNT (6)
+	int ret = 0;
+	int i = 0;
+
+	do {
+		ret = dm_i2c_reg_write(dev, offset, value);
+		if (ret < 0) {
+			printf("panel_i2c_reg_write fail, reg = %x value = %x  i = %d ret = %d\n", offset, value, i, ret);
+			mdelay(20);
+		}
+	} while ((++i <= PANEL_I2C_WRITE_RETRY_COUNT) && (ret < 0));
+}
+
+int  panel_i2c_reg_read(struct udevice *dev, uint offset)
+{
+	#define PANEL_I2C_READ_RETRY_COUNT (3)
+	int ret = 0;
+	int i = 0;
+
+	do {
+		ret = dm_i2c_reg_read(dev, offset);
+		if (ret < 0) {
+			printf("panel_i2c_reg_read fail, i = %d  reg = %x ret = %d\n", i, offset, ret);
+			mdelay(20);
+		} else
+			return ret;
+	} while ((++i <= PANEL_I2C_READ_RETRY_COUNT) && (ret < 0));
+
+	return ret;
+}
 
 static inline int get_panel_cmd_type(const char *s)
 {
@@ -266,16 +339,40 @@ static int rockchip_panel_send_dsi_cmds(struct mipi_dsi_device *dsi,
 
 	return 0;
 }
+struct rockchip_panel *g_panel=NULL;
 
 static void panel_simple_prepare(struct rockchip_panel *panel)
 {
 	struct rockchip_panel_plat *plat = dev_get_platdata(panel->dev);
 	struct rockchip_panel_priv *priv = dev_get_priv(panel->dev);
 	struct mipi_dsi_device *dsi = dev_get_parent_platdata(panel->dev);
+	struct udevice *dev;
 	int ret;
+
+	if(!g_panel)
+		g_panel = panel;
+
+	printf("panel_simple_prepaer\n");
 
 	if (priv->prepared)
 		return;
+
+    if (lt9211_is_connected()) {
+		lt9211_lvds_power_on();
+        if(plat->pwseq_delay.t1)
+            mdelay(plat->pwseq_delay.t1);//lvds power on to lvds signal
+    }
+
+	if (powertip_panel_connected) {
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &dev);
+		panel_i2c_reg_write(dev, 0x5, 0x3);
+		mdelay(20);
+		panel_i2c_reg_write(dev, 0x5, 0x0);
+		mdelay(20);
+		panel_i2c_reg_write(dev, 0x5, 0x3);
+		mdelay(200);
+		printf("panel_simple_prepare powertip powerting on\n");
+	}
 
 	if (priv->power_supply)
 		regulator_set_enable(priv->power_supply, !plat->power_invert);
@@ -298,7 +395,7 @@ static void panel_simple_prepare(struct rockchip_panel *panel)
 	if (plat->delay.init)
 		mdelay(plat->delay.init);
 
-	if (plat->on_cmds) {
+	if (!rpi_panel_connected && plat->on_cmds) {
 		if (priv->cmd_type == CMD_TYPE_SPI)
 			ret = rockchip_panel_send_spi_cmds(panel->state,
 							   plat->on_cmds);
@@ -357,6 +454,39 @@ static void panel_simple_enable(struct rockchip_panel *panel)
 	struct rockchip_panel_plat *plat = dev_get_platdata(panel->dev);
 	struct rockchip_panel_priv *priv = dev_get_priv(panel->dev);
 
+	struct mipi_dsi_device *dsi = dev_get_parent_platdata(panel->dev);
+	struct udevice *dev;
+
+	printf("panel_simple_enable\n");
+
+	if (lt9211_is_connected()) {
+		lt9211_bridge_enable();
+        if(plat->pwseq_delay.t2)
+            mdelay(plat->pwseq_delay.t2);//lvds signal to turn on backlight
+    }
+
+	if (rpi_panel_connected) {
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &dev);
+		panel_i2c_reg_write(dev, 0x85, 0x0);
+		mdelay(200);
+		panel_i2c_reg_write(dev, 0x85, 0x1);
+		mdelay(100);
+		panel_i2c_reg_write(dev, 0x81, 0x4);
+		printf("panel_simple_prepare rpi powerting on\n");
+		mdelay(100);
+		rockchip_panel_send_dsi_cmds(dsi, plat->on_cmds);
+		mdelay(50);
+		panel_i2c_reg_write(dev, 0x86, 255);
+		printf("panel_simple_enable rpi backlight on\n");
+	} else if (powertip_panel_connected) {
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &dev);
+		mdelay(50);
+		panel_i2c_reg_write(dev, 0x6, 0x80|0x0F);
+		printf("panel_simple_enable powertip backlight on\n");
+		mdelay(50);
+		panel_i2c_reg_write(dev, 0x6, 0x80|0x1F);
+	}
+
 	if (priv->enabled)
 		return;
 
@@ -373,15 +503,40 @@ static void panel_simple_disable(struct rockchip_panel *panel)
 {
 	struct rockchip_panel_plat *plat = dev_get_platdata(panel->dev);
 	struct rockchip_panel_priv *priv = dev_get_priv(panel->dev);
+	struct udevice *dev;
 
+	printf("panel_simple_disable\n");
 	if (!priv->enabled)
 		return;
+
+	if (rpi_panel_connected) {
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &dev);
+		dm_i2c_reg_write(dev, 0x86, 0);
+		dm_i2c_reg_write(dev, 0x85, 0x0);
+		mdelay(50);
+	} else if (powertip_panel_connected) {
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &dev);
+		dm_i2c_reg_write(dev, 0x6, 0);
+		dm_i2c_reg_write(dev, 0x5, 0x0);
+		mdelay(50);
+	}
 
 	if (priv->backlight)
 		backlight_disable(priv->backlight);
 
 	if (plat->delay.disable)
 		mdelay(plat->delay.disable);
+
+    if (lt9211_is_connected()) {
+        if(plat->pwseq_delay.t3)
+            mdelay(plat->pwseq_delay.t3);//backlight power off to stop lvds signal
+        lt9211_bridge_disable();
+               if(plat->pwseq_delay.t4)
+            mdelay(plat->pwseq_delay.t4);//stop lvds signal to turn VCC off
+               lt9211_lvds_power_off();
+               if(plat->pwseq_delay.t5)
+            mdelay(plat->pwseq_delay.t5);//lvds power off to turn on lvds power
+    }
 
 	priv->enabled = false;
 }
@@ -457,7 +612,10 @@ static int rockchip_panel_probe(struct udevice *dev)
 	struct rockchip_panel *panel;
 	int ret;
 	const char *cmd_type;
+	const void *data;
+	int len = 0;
 
+	printf("rockchip_panel_probe\n");
 	ret = gpio_request_by_name(dev, "enable-gpios", 0,
 				   &priv->enable_gpio, GPIOD_IS_OUT);
 	if (ret && ret != -ENOENT) {
@@ -519,6 +677,79 @@ static int rockchip_panel_probe(struct udevice *dev)
 		dm_gpio_set_value(&priv->spi_cs_gpio, 1);
 		dm_gpio_set_value(&priv->reset_gpio, 0);
 	}
+
+	if (rpi_panel_connected) {
+		plat->power_invert = 0;
+		plat->delay.prepare = 0;
+		plat->delay.unprepare = 0;
+		plat->delay.enable = 0;
+		plat->delay.disable = 0;
+		plat->delay.init = 0;
+		plat->delay.reset = 0;
+		plat->bus_format = MEDIA_BUS_FMT_RBG888_1X24;
+		plat->bpc = 8;
+		data = dev_read_prop(dev, "rpi-init-sequence", &len);
+		if (data) {
+			plat->on_cmds = calloc(1, sizeof(*plat->on_cmds));
+			if (plat->on_cmds) {
+				ret = rockchip_panel_parse_cmds(data, len, plat->on_cmds);
+				if (ret) {
+					printf("failed to parse panel init sequence\n");
+					free(plat->on_cmds);
+				}
+			}
+		}
+	} else if (powertip_panel_connected) {
+		plat->power_invert = 0;
+		plat->delay.prepare = 0;
+		plat->delay.unprepare = 0;
+		plat->delay.enable = 0;
+		plat->delay.disable = 0;
+		plat->delay.init = 0;
+		plat->delay.reset = 0;
+		plat->bus_format = MEDIA_BUS_FMT_RBG888_1X24;
+		plat->bpc = 8;
+
+		if (powertip_id == 0x86) {
+			data = dev_read_prop(dev, "powertip-rev-b-init-sequence", &len);
+		} else {
+			data = dev_read_prop(dev, "powertip-rev-a-init-sequence", &len);
+		}
+		if (data) {
+			plat->on_cmds = calloc(1, sizeof(*plat->on_cmds));
+			if (plat->on_cmds) {
+				ret = rockchip_panel_parse_cmds(data, len, plat->on_cmds);
+				if (ret) {
+					printf("failed to parse panel init sequence\n");
+					free(plat->on_cmds);
+				}
+			}
+		}
+
+		data = dev_read_prop(dev, "powertip-exit-sequence", &len);
+		if (data) {
+			plat->off_cmds = calloc(1, sizeof(*plat->off_cmds));
+			if (plat->off_cmds) {
+				ret = rockchip_panel_parse_cmds(data, len, plat->off_cmds);
+				if (ret) {
+					printf("failed to parse panel exit sequence\n");
+					free(plat->off_cmds);
+				}
+			}
+		}
+	}
+
+	#ifdef CONFIG_DRM_I2C_LT9211
+    if (lt9211_is_connected()) {
+               plat->pwseq_delay.t1 = dev_read_u32_default(dev, "t1", 0);
+               plat->pwseq_delay.t2 = dev_read_u32_default(dev, "t2", 0);
+               plat->pwseq_delay.t3 = dev_read_u32_default(dev, "t3", 0);
+               plat->pwseq_delay.t4 = dev_read_u32_default(dev, "t4", 0);
+               plat->pwseq_delay.t5 = dev_read_u32_default(dev, "t5", 0);
+
+        printk("panel_simple_dsi_of_get_desc_data t1=%d t2=%d t3=%d t4=%d t5=%d\n", plat->pwseq_delay.t1,plat->pwseq_delay.t2,plat->pwseq_delay.t3,plat->pwseq_delay.t4,plat->pwseq_delay.t5);
+    }
+#endif
 
 	panel = calloc(1, sizeof(*panel));
 	if (!panel)
