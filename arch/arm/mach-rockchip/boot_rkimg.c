@@ -35,8 +35,41 @@
 #include <u-boot/sha1.h>
 #include <u-boot/sha256.h>
 #include <linux/usb/phy-rockchip-usb2.h>
+#include <asm/arch-rockchip/gpio.h>
+
+#define RK3399_GPIO2_SWPORTA_DDR_REG	0xff780004
+#define RK3399_GPIO2_SWPORTA_DR_REG	0xff780000
 
 DECLARE_GLOBAL_DATA_PTR;
+
+void rk3288_mask_release_high(void)
+{
+        printf("[RK3288] Set GPIO6_A7 (MASK_RELEASE) output high\n");
+
+	int tmp;
+
+        // Set GPIO6_A7 to direction output.
+        tmp = readl(RKIO_GPIO6_PHYS + GPIO_SWPORT_DDR);
+	writel(tmp | 0x80, RKIO_GPIO6_PHYS + GPIO_SWPORT_DDR);
+
+        // Set GPIO6_A7 to High.
+	tmp = readl(RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
+        writel(tmp | 0x80, RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
+}
+
+void rk3399_mask_release_high(void)
+{
+	printf("[RK3399] Set GPIO2_A4 (MASK_RELEASE) output high\n");
+
+	uint32_t reg_gpio2a_ddr = readl((void *)RK3399_GPIO2_SWPORTA_DDR_REG);
+	uint32_t reg_gpio2a_dr = readl((void *)RK3399_GPIO2_SWPORTA_DR_REG);
+
+	// Set GPIO2_A4 to direction output.
+	writel(reg_gpio2a_ddr | (1 << 4), RK3399_GPIO2_SWPORTA_DDR_REG);
+
+	// Set GPIO2_A4 to High.
+	writel(reg_gpio2a_dr | (1 << 4), RK3399_GPIO2_SWPORTA_DR_REG);
+}
 
 __weak int rk_board_early_fdt_fixup(void *blob)
 {
@@ -91,6 +124,14 @@ static void boot_devtype_init(void)
 
 	if (done)
 		return;
+
+#ifdef CONFIG_ROCKCHIP_RK3288
+	rk3288_mask_release_high();
+#endif
+
+#ifdef CONFIG_ROCKCHIP_RK3399
+	rk3399_mask_release_high();
+#endif
 
 	/* configuration */
 	if (!param_parse_assign_bootdev(&devtype, &devnum)) {
