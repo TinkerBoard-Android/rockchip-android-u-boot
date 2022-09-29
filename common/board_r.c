@@ -241,12 +241,6 @@ static int initr_unlock_current_limit(void)
         usb_current_limit_unlock(true);
         return 0;
 }
-
-static int initr_lock_current_limit(void)
-{
-        usb_current_limit_unlock(false);
-        return 0;
-}
 #endif
 
 #if defined(CONFIG_SYS_INIT_RAM_LOCK) && defined(CONFIG_E500)
@@ -1076,9 +1070,6 @@ static init_fnc_t init_sequence_r[] = {
 #endif
 #ifdef CONFIG_PS2KBD
 	initr_kbd,
-#endif
-#ifdef CONFIG_ROCKCHIP_RK3288
-        initr_lock_current_limit,
 #endif
 	run_main_loop,
 };

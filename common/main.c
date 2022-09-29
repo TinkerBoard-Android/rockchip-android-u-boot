@@ -63,6 +63,10 @@ void main_loop(void)
 	if (cli_process_fdt(&s))
 		cli_secure_boot_cmd(s);
 
+#ifdef CONFIG_ROCKCHIP_RK3288
+	usb_current_limit_unlock(false);
+#endif
+
 	autoboot_command(s);
 
 	cli_loop();
