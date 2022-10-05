@@ -108,6 +108,10 @@ static void announce_and_cleanup(bootm_headers_t *images, int fake)
 
 	cleanup_before_linux();
 
+#ifdef CONFIG_ROCKCHIP_RK3288
+	usb_current_limit_unlock(false);
+#endif
+
 	us = (get_ticks() - gd->sys_start_tick) / (COUNTER_FREQUENCY / 1000000);
 	printf("Total: %ld.%ld ms\n", us / 1000, us % 1000);
 
