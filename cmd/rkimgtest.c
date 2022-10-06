@@ -11,6 +11,7 @@ static int do_rkimg_test(cmd_tbl_t *cmdtp, int flag,
 			 int argc, char *const argv[])
 {
 	struct blk_desc *dev_desc;
+	disk_partition_t part_info;
 	u32 *buffer;
 	int ret;
 
@@ -42,10 +43,19 @@ static int do_rkimg_test(cmd_tbl_t *cmdtp, int flag,
 
 		/* TAG in IDB */
 		if (0 == buffer[128 + 104 / 4]) {
-			if (!strcmp("mmc", argv[1]))
-				env_update("bootargs", "sdfwupdate");
-			else
-				env_update("bootargs", "usbfwupdate");
+			/*
+			 * Check if this is for boot or recovey based on whether the partition super exists.
+			 * If the partition supper exists, TAG should be 1 or 2 but missed.
+			 * Hence do nothing here just like TAG 1 and Tag 2.
+			 */
+			if(part_get_info_by_name(dev_desc, "super", &part_info)){
+				printf("Found the partition super. Do nothing just like for TAG 1 or TAG 2.\n");
+			} else {
+				if (!strcmp("mmc", argv[1]))
+					env_update("bootargs", "sdfwupdate");
+				else
+					env_update("bootargs", "usbfwupdate");
+			}
 		}
 	} else if (buffer[0] == 0x534e4b52 || buffer[0] == 0x534e5252) {
 		/* The 0x534e4b52 & 0x534e5252 are the new idb block header tag */
