@@ -630,11 +630,13 @@ static int rockchip_panel_probe(struct udevice *dev)
 		return ret;
 	}
 
-	ret = uclass_get_device_by_phandle(UCLASS_PANEL_BACKLIGHT, dev,
-					   "backlight", &priv->backlight);
-	if (ret && ret != -ENOENT) {
-		printf("%s: Cannot get backlight: %d\n", __func__, ret);
-		return ret;
+	if ( !rpi_panel_connected && !powertip_panel_connected) {
+		ret = uclass_get_device_by_phandle(UCLASS_PANEL_BACKLIGHT, dev,
+						"backlight", &priv->backlight);
+		if (ret && ret != -ENOENT) {
+			printf("%s: Cannot get backlight: %d\n", __func__, ret);
+			return ret;
+		}
 	}
 
 	ret = uclass_get_device_by_phandle(UCLASS_REGULATOR, dev,
