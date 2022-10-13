@@ -443,6 +443,20 @@ static bool sn65dsi86_is_connected(void)
 }
 #endif
 
+#if defined(CONFIG_DRM_I2C_LT9211)
+extern void lt9211_set_videomode( struct drm_display_mode *dmode);
+extern bool lt9211_is_connected(void);
+#else
+void lt9211_set_videomode( struct drm_display_mode *dmode)
+{
+	return;
+}
+static bool lt9211_is_connected(void)
+{
+	return false;
+}
+#endif
+
 static int display_get_detail_timing(ofnode node, struct drm_display_mode *mode)
 {
 	int hactive, vactive, pixelclock;
@@ -503,6 +517,9 @@ static int display_get_detail_timing(ofnode node, struct drm_display_mode *mode)
 
 	if (sn65dsi86_is_connected())
 		sn65dsi86_setup_desc(mode);
+
+	if (lt9211_is_connected())
+		lt9211_set_videomode(mode);
 
 	printk("display_get_detail_timing hactive = %d vactive = %d pixelclock = %d flags =0x%x\n", hactive, vactive, pixelclock,(unsigned int) flags);
 	printk("display_get_detail_timing hfront_porch = %d hback_porch = %d hsync_len = %d\n", hfront_porch, hback_porch, hsync_len);
@@ -1797,14 +1814,14 @@ static int rockchip_display_fixup_dts(void *blob)
 
 extern int  panel_i2c_reg_read(struct udevice *dev, uint offset);
 
-int  load_sn65dsi8x_driver(/*struct udevice *dev,*/char* device_name)
+int  load_mipi2lvds_driver(/*struct udevice *dev,*/char* device_name)
 {
 	struct udevice *i2c_dev;
 	/*ofnode panel_node;
 	struct udevice *panel_dev;*/
 	int ret;
 
-	printf("load_sn65dsi8x_driver: %s\n", device_name);
+	printf("load_mipi2lvds_driver: %s\n", device_name);
 	ret = uclass_get_device_by_name(UCLASS_I2C_GENERIC, device_name, &i2c_dev);
 
 	/*panel_node = dev_read_subnode(dev, "panel");
@@ -1816,7 +1833,7 @@ int  load_sn65dsi8x_driver(/*struct udevice *dev,*/char* device_name)
 		if (!ret)
 			goto found;
 	}*/
-	printf("load_sn65dsi8x_driver: %s : ret=%d\n", device_name, ret);
+	printf("load_mipi2lvds_driver: %s : ret=%d\n", device_name, ret);
 	return ret;
 }
 
@@ -1864,11 +1881,15 @@ static int rockchip_display_probe(struct udevice *dev)
 		return -ENODEV;
 
 	#if defined(CONFIG_DRM_I2C_SN65DSI84)
-	load_sn65dsi8x_driver("sn65dsi84@2c");
+	load_mipi2lvds_driver("sn65dsi84@2c");
 	#endif
 
 	#if defined(CONFIG_DRM_I2C_SN65DSI86)
-	load_sn65dsi8x_driver("sn65dsi86@2d");
+	load_mipi2lvds_driver("sn65dsi86@2d");
+	#endif
+
+	#if defined(CONFIG_DRM_I2C_LT9211)
+	load_mipi2lvds_driver("lt9211@2d");
 	#endif
 
 	ofnode_for_each_subnode(node, route_node) {
@@ -1885,8 +1906,8 @@ static int rockchip_display_probe(struct udevice *dev)
 
 			printf("rockchip_display_probe: panel_i2c_busnum = %d \n", panel_i2c_busnum);
 
-			if (sn65dsi84_is_connected() || sn65dsi86_is_connected()) {
-				printf("rockchip_display_probe: sn65dsi8x_is_connected\n");
+			if (sn65dsi84_is_connected() || sn65dsi86_is_connected() || lt9211_is_connected()) {
+				printf("rockchip_display_probe: sn65dsi8x_lt9211_is_connected\n");
 			} else {
 			i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &rpi_dev);//rpi
 			rpi_buffer = panel_i2c_reg_read(rpi_dev, 0x80);
@@ -1905,8 +1926,9 @@ static int rockchip_display_probe(struct udevice *dev)
 			if (!powertip_panel_connected &&
 				!rpi_panel_connected &&
 				!sn65dsi84_is_connected() &&
-				!sn65dsi86_is_connected()) {
-					printf("rockchip_display_probe: no dsi panel  and no sn65dsi8x connected\n");
+				!sn65dsi86_is_connected() &&
+				!lt9211_is_connected()) {
+					printf("rockchip_display_probe: no dsi panel and no sn65dsi8x or lt9211 connected\n");
 					continue;
 			}
 		}
@@ -1976,7 +1998,7 @@ static int rockchip_display_probe(struct udevice *dev)
 		memset(s, 0, sizeof(*s));
 
 		INIT_LIST_HEAD(&s->head);
-		if (sn65dsi84_is_connected() || sn65dsi86_is_connected()) {
+		if (sn65dsi84_is_connected() || sn65dsi86_is_connected() || lt9211_is_connected()) {
 			memcpy(s->ulogo_name, "logo.bmp", strlen("logo.bmp"));
 			memcpy(s->klogo_name, "logo_kernel.bmp", strlen("logo_kernel.bmp"));
 		} else {

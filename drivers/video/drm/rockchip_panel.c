@@ -32,6 +32,38 @@ extern bool rpi_panel_connected;
 extern unsigned int panel_i2c_busnum;
 extern unsigned int powertip_id;
 
+#if defined(CONFIG_DRM_I2C_LT9211)
+extern bool lt9211_is_connected(void);
+extern void lt9211_bridge_enable(void);
+extern void lt9211_bridge_disable(void);
+extern void lt9211_lvds_power_on(void);
+extern void lt9211_lvds_power_off(void);
+#else
+static bool lt9211_is_connected(void) {
+	return false;
+}
+extern void lt9211_bridge_enable(void) {
+	return;
+}
+extern void lt9211_bridge_disable(void) {
+	return;
+}
+extern void lt9211_lvds_power_on(void) {
+	return;
+}
+extern void lt9211_lvds_power_off(void) {
+	return;
+}
+#endif
+
+struct pwseq {
+	unsigned int t1;//VCC on to start lvds signal
+	unsigned int t2;//LVDS signal(start) to turn Backlihgt on
+	unsigned int t3;//Backlihgt(off) to stop lvds signal
+	unsigned int t4;//LVDS signal to turn VCC off
+	unsigned int t5;//VCC off to turn VCC on
+};
+
 struct rockchip_cmd_header {
 	u8 data_type;
 	u8 delay_ms;
@@ -52,6 +84,7 @@ struct rockchip_panel_plat {
 	bool power_invert;
 	u32 bus_format;
 	unsigned int bpc;
+	struct pwseq pwseq_delay;
 
 	struct {
 		unsigned int prepare;
@@ -294,6 +327,7 @@ static int rockchip_panel_send_dsi_cmds(struct mipi_dsi_device *dsi,
 
 	return 0;
 }
+struct rockchip_panel *g_panel=NULL;
 
 static void panel_simple_prepare(struct rockchip_panel *panel)
 {
@@ -303,10 +337,19 @@ static void panel_simple_prepare(struct rockchip_panel *panel)
 	struct udevice *dev;
 	int ret;
 
+	if(!g_panel)
+		g_panel = panel;
+
 	printf("panel_simple_prepaer\n");
 
 	if (priv->prepared)
 		return;
+
+    if (lt9211_is_connected()) {
+		lt9211_lvds_power_on();
+        if(plat->pwseq_delay.t1)
+            mdelay(plat->pwseq_delay.t1);//lvds power on to lvds signal
+    }
 
 	if (powertip_panel_connected) {
 		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &dev);
@@ -363,6 +406,7 @@ static void panel_simple_unprepare(struct rockchip_panel *panel)
 	struct mipi_dsi_device *dsi = dev_get_parent_platdata(panel->dev);
 	int ret;
 
+	printf("panel_simple_unprepare\n");
 	if (!priv->prepared)
 		return;
 
@@ -404,6 +448,12 @@ static void panel_simple_enable(struct rockchip_panel *panel)
 
 	printf("panel_simple_enable\n");
 
+    if (lt9211_is_connected()) {
+		lt9211_bridge_enable();
+        if(plat->pwseq_delay.t2)
+            mdelay(plat->pwseq_delay.t2);//lvds signal to turn on backlight
+    }
+
 	if (rpi_panel_connected) {
 		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &dev);
 		panel_i2c_reg_write(dev, 0x85, 0x0);
@@ -444,6 +494,7 @@ static void panel_simple_disable(struct rockchip_panel *panel)
 	struct rockchip_panel_priv *priv = dev_get_priv(panel->dev);
 	struct udevice *dev;
 
+	printf("panel_simple_disable\n");
 	if (!priv->enabled)
 		return;
 
@@ -465,7 +516,28 @@ static void panel_simple_disable(struct rockchip_panel *panel)
 	if (plat->delay.disable)
 		mdelay(plat->delay.disable);
 
+	if (lt9211_is_connected()) {
+        if(plat->pwseq_delay.t3)
+            mdelay(plat->pwseq_delay.t3);//backlight power off to stop lvds signal
+        lt9211_bridge_disable();
+		if(plat->pwseq_delay.t4)
+            mdelay(plat->pwseq_delay.t4);//stop lvds signal to turn VCC off
+		lt9211_lvds_power_off();
+		if(plat->pwseq_delay.t5)
+            mdelay(plat->pwseq_delay.t5);//lvds power off to turn on lvds power
+    }
+
 	priv->enabled = false;
+}
+
+void panel_simple_shutdown(void)
+{
+	printf("panel_simple_shutdown\n");
+	if(g_panel) {
+		panel_simple_disable(g_panel);
+		panel_simple_unprepare(g_panel);
+		mdelay(10);
+	}
 }
 
 static void panel_simple_init(struct rockchip_panel *panel)
@@ -674,6 +746,18 @@ static int rockchip_panel_probe(struct udevice *dev)
 			}
 		}
 	}
+
+#ifdef CONFIG_DRM_I2C_LT9211
+    if (lt9211_is_connected()) {
+		plat->pwseq_delay.t1 = dev_read_u32_default(dev, "t1", 0);
+		plat->pwseq_delay.t2 = dev_read_u32_default(dev, "t2", 0);
+		plat->pwseq_delay.t3 = dev_read_u32_default(dev, "t3", 0);
+		plat->pwseq_delay.t4 = dev_read_u32_default(dev, "t4", 0);
+		plat->pwseq_delay.t5 = dev_read_u32_default(dev, "t5", 0);
+
+        printk("panel_simple_dsi_of_get_desc_data t1=%d t2=%d t3=%d t4=%d t5=%d\n", plat->pwseq_delay.t1,plat->pwseq_delay.t2,plat->pwseq_delay.t3,plat->pwseq_delay.t4,plat->pwseq_delay.t5);
+    }
+#endif
 
 
 	panel = calloc(1, sizeof(*panel));

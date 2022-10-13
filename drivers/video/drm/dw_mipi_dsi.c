@@ -921,6 +921,15 @@ static bool sn65dsi86_is_connected(void)
 }
 #endif
 
+#if defined(CONFIG_DRM_I2C_LT9211)
+extern bool lt9211_is_connected(void);
+#else
+static bool lt9211_is_connected(void)
+{
+	return false;
+}
+#endif
+
 static void dw_mipi_dsi_enable(struct dw_mipi_dsi *dsi)
 {
 	const struct drm_display_mode *mode = &dsi->mode;
@@ -1762,26 +1771,26 @@ static int dw_mipi_dsi_child_pre_probe(struct udevice *dev)
 	int rpi_buffer = 0;
 	int ret;
 
-	if (!sn65dsi84_is_connected() && !sn65dsi86_is_connected()) {
-	i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &rpi_dev);//rpi
-	rpi_buffer = panel_i2c_reg_read(rpi_dev, 0x80);
+	if (!sn65dsi84_is_connected() && !sn65dsi86_is_connected() && !lt9211_is_connected()) {
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x45, 1, &rpi_dev);//rpi
+		rpi_buffer = panel_i2c_reg_read(rpi_dev, 0x80);
 
-	i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &powertip_dev);//powertip
-	powertip_buffer = panel_i2c_reg_read(powertip_dev, 0x4);
-	printf(" dw_mipi_dsi_child_pre_probe rpi_buffer=%d  powertip_buffer=%d panel_i2c_busnum=%d\n",rpi_buffer, powertip_buffer, panel_i2c_busnum);
+		i2c_get_chip_for_busnum(panel_i2c_busnum, 0x36, 1, &powertip_dev);//powertip
+		powertip_buffer = panel_i2c_reg_read(powertip_dev, 0x4);
+		printf(" dw_mipi_dsi_child_pre_probe rpi_buffer=%d  powertip_buffer=%d panel_i2c_busnum=%d\n",rpi_buffer, powertip_buffer, panel_i2c_busnum);
 
-	if (rpi_buffer == 0xDE  || rpi_buffer == 0xC3) {
-		rpi_panel_connected = true;
-		device->lanes = 1;
-		device->format = MIPI_DSI_FMT_RGB888;
-			device->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM;
-	} else if ((powertip_buffer > 0) && (powertip_buffer & 0xF0) == 0x80) {
-		powertip_panel_connected = true;
-		powertip_id = powertip_buffer;
-		device->lanes = 2;
-		device->format = MIPI_DSI_FMT_RGB888;
-		device->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST |MIPI_DSI_MODE_LPM;
-	}
+		if (rpi_buffer == 0xDE  || rpi_buffer == 0xC3) {
+			rpi_panel_connected = true;
+			device->lanes = 1;
+			device->format = MIPI_DSI_FMT_RGB888;
+				device->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM;
+		} else if ((powertip_buffer > 0) && (powertip_buffer & 0xF0) == 0x80) {
+			powertip_panel_connected = true;
+			powertip_id = powertip_buffer;
+			device->lanes = 2;
+			device->format = MIPI_DSI_FMT_RGB888;
+			device->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST |MIPI_DSI_MODE_LPM;
+		}
 	}else {
 		printf("dw_mipi_dsi_child_pre_probe lanes =%u format= %d mode_flags =0x%lx\n", device->lanes, device->format, device->mode_flags);
 	}
