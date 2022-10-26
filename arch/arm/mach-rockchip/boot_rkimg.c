@@ -42,6 +42,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_ROCKCHIP_RK3288
 void rk3288_mask_release_high(void)
 {
         printf("[RK3288] Set GPIO6_A7 (MASK_RELEASE) output high\n");
@@ -56,6 +57,7 @@ void rk3288_mask_release_high(void)
 	tmp = readl(RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
         writel(tmp | 0x80, RKIO_GPIO6_PHYS + GPIO_SWPORT_DR);
 }
+#endif
 
 void rk3399_mask_release_high(void)
 {
