@@ -1412,8 +1412,6 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 		show_bmp_from_splash = false;
 		len = rockchip_read_resource_file(header, bmp_name, 0, RK_BLK_SIZE);
 	}
-
-	len = rockchip_read_resource_file(header, bmp_name, 0, RK_BLK_SIZE);
 	if (len != RK_BLK_SIZE) {
 		ret = -EINVAL;
 		goto free_header;
