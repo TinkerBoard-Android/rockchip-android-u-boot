@@ -275,6 +275,8 @@ int rockchip_get_boot_mode(void)
 				printf("usbcphy0_otg_utmi_bvalid = 1\n");
 #elif defined(CONFIG_ROCKCHIP_RK3288)
 			if (check_force_enter_ums_mode()) {
+#else
+			if (0) {
 #endif
 				boot_mode[PH] = BOOT_MODE_UMS_HW;
 				clear_boot_reg = 1;
