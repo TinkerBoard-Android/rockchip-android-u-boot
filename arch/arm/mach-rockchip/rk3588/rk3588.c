@@ -873,7 +873,7 @@ int arch_cpu_init(void)
 		writel(0x07000200, EMMC_IOC_BASE + EMMC_IOC_GPIO2D_DS_H);
 	} else if (readl(BUS_IOC_BASE + BUS_IOC_GPIO2D_IOMUX_SEL_L) == 0x1111) {
 		/*
-		 * Set the emmc io drive strength:
+		 * set the emmc io drive strength:
 		 * data and cmd: 50ohm
 		 * clock: 25ohm
 		 */
@@ -891,11 +891,6 @@ int arch_cpu_init(void)
 		writel(0x00700020, VCCIO3_5_IOC_BASE + IOC_VCCIO3_5_GPIO3A_DS_H);
 		writel(0x00070002, VCCIO3_5_IOC_BASE + IOC_VCCIO3_5_GPIO3C_DS_H);
 	}
-
-	/* Set emmc iomux for good extention if the emmc is not the boot device */
-	writel(0xffff1111, BUS_IOC_BASE + BUS_IOC_GPIO2A_IOMUX_SEL_L);
-	writel(0xffff1111, BUS_IOC_BASE + BUS_IOC_GPIO2D_IOMUX_SEL_L);
-	writel(0xffff1111, BUS_IOC_BASE + BUS_IOC_GPIO2D_IOMUX_SEL_H);
 
 	/*
 	 * Assert reset the pipephy0, pipephy1 and pipephy2,
@@ -917,7 +912,17 @@ int arch_cpu_init(void)
 	writel(0x00030003, PMU1CRU_BASE + PMU1CRU_SOFTRST_CON04);
 
 	spl_board_sd_iomux_save();
+#else /* U-Boot */
+	/* uboot: config iomux */
+#ifdef CONFIG_ROCKCHIP_EMMC_IOMUX
+	/* Set emmc iomux for good extention if the emmc is not the boot device */
+	writel(0xffff1111, BUS_IOC_BASE + BUS_IOC_GPIO2A_IOMUX_SEL_L);
+	writel(0xffff1111, BUS_IOC_BASE + BUS_IOC_GPIO2D_IOMUX_SEL_L);
+	writel(0xffff1111, BUS_IOC_BASE + BUS_IOC_GPIO2D_IOMUX_SEL_H);
 #endif
+
+#endif
+
 	/* Select usb otg0 phy status to 0 that make rockusb can work at high-speed */
 	writel(0x00080008, USBGRF_BASE + USB_GRF_USB3OTG0_CON1);
 
@@ -940,3 +945,36 @@ int rk_board_fdt_fixup(const void *blob)
 
 	return 0;
 }
+
+#ifdef CONFIG_SPL_BUILD
+int spl_fit_standalone_release(char *id, uintptr_t entry_point)
+{
+	/* gpll enable */
+	writel(0x00f00042, 0xfd7c01c4);
+	/* set start addr, pmu_mcu_code_addr_start */
+	writel(0xFFFF0000 | (entry_point >> 16), 0xFD582024);
+	/* pmu_mcu_sram_addr_start */
+	writel(0xFFFF2000, 0xFD582028);
+	/* pmu_mcu_tcm_addr_start */
+	writel(0xFFFF2000, 0xFD582034);
+	/* set mcu secure */
+	writel(0x00080000, 0xFD582000);
+	/* set cache cache_peripheral_addr */
+	writel(0xffff0000, 0xFD582018);
+	writel(0xffffee00, 0xFD58201c);
+	writel(0x00ff00ff, 0xFD582020);  /* 0xf0000000 ~ 0xfee00000 */
+	/* mcupmu access DDR secure control, each bit for a region. */
+	writel(0x0000ffff, 0xFE03008C);
+	/* mcupmu access DDR secure control, each bit for a region. */
+	writel(0x000000ff, 0xFE03808C);
+	/* PMU WDT reset system enable */
+	writel(0x02000200, 0xFD586008);
+	/* WDT trigger global reset. */
+	writel(0x08400840, 0xFD7C0C10);
+	/* Spl helps to load the mcu image, but not need to release
+	 * mcu for rk3588.
+	 */
+
+	return 0;
+}
+#endif

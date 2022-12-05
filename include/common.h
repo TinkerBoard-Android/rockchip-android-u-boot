@@ -540,8 +540,6 @@ int	is_core_valid (unsigned int);
  */
 int arch_cpu_init(void);
 
-int arch_fpga_init(void);
-
 void s_init(void);
 
 int	checkcpu      (void);

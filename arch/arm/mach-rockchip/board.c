@@ -158,13 +158,17 @@ static int rockchip_set_serialno(void)
 	memset(serialno_str, 0, VENDOR_SN_MAX);
 
 #ifdef CONFIG_ROCKCHIP_VENDOR_PARTITION
+	int j;
+
 	ret = vendor_storage_read(SN_ID, serialno_str, (VENDOR_SN_MAX-1));
 	if (ret > 0) {
-		i = strlen(serialno_str);
-		for (; i > 0; i--) {
+		j = strlen(serialno_str);
+		for (i = 0; i < j; i++) {
 			if ((serialno_str[i] >= 'a' && serialno_str[i] <= 'z') ||
 			    (serialno_str[i] >= 'A' && serialno_str[i] <= 'Z') ||
 			    (serialno_str[i] >= '0' && serialno_str[i] <= '9'))
+				continue;
+			else
 				break;
 		}
 
@@ -705,8 +709,12 @@ int board_init_f_boot_flags(void)
 {
 	int boot_flags = 0;
 
+#ifdef CONFIG_FPGA_ROCKCHIP
 	arch_fpga_init();
-
+#endif
+#ifdef CONFIG_PSTORE
+	param_parse_pstore();
+#endif
 	param_parse_pre_serial(&boot_flags);
 
 	/* The highest priority to turn off (override) console */
@@ -964,7 +972,7 @@ void autoboot_command_fail_handle(void)
 #endif
 
 #ifdef CONFIG_AVB_VBMETA_PUBLIC_KEY_VALIDATE
-	run_command("rockusb 0 ${devtype} ${devnum}", 0);
+	run_command("download", 0);
 	run_command("fastboot usb 0;", 0);
 #endif
 

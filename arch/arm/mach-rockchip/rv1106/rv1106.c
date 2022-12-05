@@ -20,6 +20,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define CORE_GRF_BASE			0xff040000
 #define CORE_GRF_CACHE_PERI_ADDR_START	0x0024
 #define CORE_GRF_CACHE_PERI_ADDR_END	0x0028
+#define CORE_GRF_MCU_CACHE_MISC		0x002c
 
 #define PERI_GRF_BASE			0xff000000
 #define PERI_GRF_USBPHY_CON0		0x0050
@@ -426,7 +427,8 @@ int arch_cpu_init(void)
 	writel(0xff00ffff, FW_SHRM_BASE + FW_SHRM_MST1_REG);
 
 	/* Set fspi clk 6mA */
-	writel(0x0f000700, GPIO4_IOC_BASE + GPIO4_IOC_GPIO4B_DS0);
+	if ((readl(GPIO4_IOC_BASE + GPIO4B_IOMUX_SEL_L) & 0x70) == 0x20)
+		writel(0x3f000700, GPIO4_IOC_BASE + GPIO4_IOC_GPIO4B_DS0);
 
 	/*
 	 * Set the USB2 PHY in suspend mode and turn off the
@@ -507,6 +509,11 @@ int spl_fit_standalone_release(char *id, uintptr_t entry_point)
 	writel(0x1e0000, CORECRU_BASE + CORECRU_CORESOFTRST_CON01);
 
 	return 0;
+}
+
+void rk_meta_process(void)
+{
+	writel(0x00080008, CORE_GRF_BASE + CORE_GRF_MCU_CACHE_MISC);
 }
 #endif
 

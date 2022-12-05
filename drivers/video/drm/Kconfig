@@ -41,8 +41,15 @@ config DRM_MAXIM_MAX96755F
 	bool "Maxim max96755F GMSL2 Serializer"
 	depends on DRM_ROCKCHIP
 	select I2C_MUX_MAX96755F
+	select PINCTRL_MAX96755F
 	help
 	  Driver for Maxim MAX96755F GMSL2 Serializer with MIPI-DSI Input.
+
+config DRM_PANEL_MAXIM_DESERIALIZER
+	bool "Maxim deserializer panel driver"
+	depends on DRM_ROCKCHIP
+	help
+	  Driver for Maxim deserializer panels.
 
 config DRM_ROCKCHIP_PANEL
 	bool "Rockchip Panel Support"
