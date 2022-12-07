@@ -1431,7 +1431,7 @@ static const struct drm_display_mode edid_est_modes[] = {
 		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC) },
 };
 
-static const struct base_drm_display_mode resolution_white[] = {
+static const struct drm_display_mode resolution_white[] = {
 	/* ?, vic:? - 800x480@66Hz VGG804826*/
 	{ DRM_MODE(DRM_MODE_TYPE_DRIVER, 32000, 800, 840,
 			888, 928, 480, 493, 496, 525, 0,
