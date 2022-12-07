@@ -78,7 +78,7 @@
 #define MULTIPLY_BY_3	(3)
 #define MULTIPLY_BY_4	(4)
 
-struct videomode {
+struct sn65dsi84_videomode {
 	unsigned long pixelclock;	/* pixelclock in Hz */
 
 	u32 hactive;
@@ -123,7 +123,7 @@ struct sn65dsi84_data {
 	struct gpio_desc sn65dsi84_en_gpio;
 	struct gpio_desc pwr_source_gpio;
 
-	struct videomode  vm;
+	struct sn65dsi84_videomode  vm;
 
 	unsigned int bus_format;
 	unsigned int bpc;

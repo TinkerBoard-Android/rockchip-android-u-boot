@@ -1684,7 +1684,7 @@ static int rockchip_of_find_panel(struct udevice *dev, struct rockchip_panel **p
 	*panel = NULL;
 	panel_ofnode = dev_read_subnode(dev, "panel");
 	if (ofnode_valid(panel_ofnode) && ofnode_is_available(panel_ofnode)) {
-		printf("rockchip_of_find_panel  panel_node->np->full_name=%s panel_node->np->name =%s+\n", panel_node.np->full_name, panel_node.np->name);
+		printf("rockchip_of_find_panel  panel_node->np->full_name=%s panel_node->np->name =%s+\n", panel_ofnode.np->full_name, panel_ofnode.np->name);
 		ret = uclass_get_device_by_ofnode(UCLASS_PANEL, panel_ofnode,
 						  &panel_dev);
 		if (!ret)

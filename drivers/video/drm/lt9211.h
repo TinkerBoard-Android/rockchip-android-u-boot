@@ -25,7 +25,7 @@
 //Rockchip_display.h (u-boot\drivers\video\drm)
 #include <drm_modes.h>
 
-struct videomode {
+struct lt9211_videomode {
 	unsigned long pixelclock;	/* pixelclock in Hz */
 
 	u32 hactive;
@@ -65,7 +65,7 @@ struct lt9211_data {
 	struct gpio_desc lt9211_en_gpio;
 	struct gpio_desc lvds_hdmi_sel_gpio;
 	struct gpio_desc pwr_source_gpio;
-	struct videomode  vm;
+	struct lt9211_videomode  vm;
 
 	unsigned int bus_format;
 	unsigned int bpc;
