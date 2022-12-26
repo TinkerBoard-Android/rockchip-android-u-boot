@@ -13,6 +13,10 @@
 
 #define CONFIG_GRF_SOC_STATUS3_REG 0xff77e2ac
 
+#if defined(CONFIG_ROCKCHIP_RK3568)
+#define CONFIG_USBPHY_U3_GRF_STATUS_REG  0xfdca00c0
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 enum {
@@ -149,6 +153,9 @@ int rockchip_get_boot_mode(void)
 #ifdef CONFIG_ROCKCHIP_RK3399
 	uint32_t reg_soc_status3;
 #endif
+#ifdef CONFIG_ROCKCHIP_RK3568
+        uint32_t reg_usbphy_u3_status;
+#endif
 	char *env_reboot_mode;
 	int clear_boot_reg = 0;
 	int recovery_msg = 0;
@@ -275,6 +282,10 @@ int rockchip_get_boot_mode(void)
 				printf("usbcphy0_otg_utmi_bvalid = 1\n");
 #elif defined(CONFIG_ROCKCHIP_RK3288)
 			if (check_force_enter_ums_mode()) {
+#elif defined(CONFIG_ROCKCHIP_RK3568)
+			reg_usbphy_u3_status = readl((void *)CONFIG_USBPHY_U3_GRF_STATUS_REG);
+			if (reg_usbphy_u3_status & (1 << 9)) {
+				printf("usbotg_utmi_bvalid = 1\n");
 #else
 			if (0) {
 #endif

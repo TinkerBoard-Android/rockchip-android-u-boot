@@ -286,6 +286,10 @@ static const char fsg_string_interface[] = "Mass Storage";
 
 #define CONFIG_GRF_SOC_STATUS3_REG 0xff77e2ac
 
+#if defined(CONFIG_ROCKCHIP_RK3568)
+#define CONFIG_USBPHY_U3_GRF_STATUS_REG  0xfdca00c0
+#endif
+
 struct kref {int x; };
 struct completion {int x; };
 
@@ -656,6 +660,10 @@ static int sleep_thread(struct fsg_common *common)
 #ifdef CONFIG_ROCKCHIP_RK3399
 	uint32_t reg_soc_status3;
 #endif
+#ifdef CONFIG_ROCKCHIP_RK3568
+        uint32_t reg_usbphy_u3_status;
+#endif
+
 
 	/* Wait until a signal arrives or we are woken up */
 	for (;;) {
@@ -683,6 +691,14 @@ static int sleep_thread(struct fsg_common *common)
 				printf("Usb cable disconnected, exit ums.\n");
 				return -EIO;
 			}
+#endif
+
+#ifdef CONFIG_ROCKCHIP_RK3568
+                        reg_usbphy_u3_status = readl((void *)CONFIG_USBPHY_U3_GRF_STATUS_REG);
+                        if (!(reg_usbphy_u3_status & (1 << 9))) {
+                                printf("Usb cable disconnected, exit ums.\n");
+                                return -EIO;
+                        }
 #endif
 
 			k = 0;

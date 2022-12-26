@@ -1741,13 +1741,18 @@ static int android_image_separate(struct andr_img_hdr *hdr,
 		for (int i = 0; i < hw_conf.overlay_count; i++)
 			printf("get overlay name: %s\n", hw_conf.overlay_file[i]);
 	}
-
-	if (rockchip_get_boot_mode() == BOOT_MODE_UMS_HW && hw_conf.ums != -1) {
+#ifdef CONFIG_ROCKCHIP_RK3568
+	if (rockchip_get_boot_mode() == BOOT_MODE_UMS_HW) {
+#else
+        if (rockchip_get_boot_mode() == BOOT_MODE_UMS_HW && hw_conf.ums != -1) {
+#endif
 		printf("enter UMS!\n");
 #ifdef CONFIG_ROCKCHIP_RK3288
 		run_command("ums 1 mmc 0", 0);
 #elif defined(CONFIG_ROCKCHIP_RK3399)
 		run_command("ums 0 mmc 0", 0);
+#elif defined(CONFIG_ROCKCHIP_RK3568)
+                run_command("ums 0 mmc 0", 0);
 #endif
 	}
 
