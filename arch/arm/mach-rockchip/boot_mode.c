@@ -10,6 +10,10 @@
 #include <asm/io.h>
 #include <asm/arch/boot_mode.h>
 
+#if defined(CONFIG_ROCKCHIP_RK3568)
+#define CONFIG_USBPHY_U3_GRF_STATUS_REG  0xfdca00c0
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 enum {
@@ -87,6 +91,9 @@ int rockchip_get_boot_mode(void)
 		{ -EINVAL, -EINVAL, -EINVAL };
 	static int bcb_offset = -EINVAL;	/* static */
 	uint32_t reg_boot_mode;
+#if defined(CONFIG_ROCKCHIP_RK3568)
+	uint32_t reg_usbphy_u3_status;
+#endif
 	char *env_reboot_mode;
 	int clear_boot_reg = 0;
 	int recovery_msg = 0;
@@ -207,8 +214,19 @@ int rockchip_get_boot_mode(void)
 			boot_mode[PL] = BOOT_MODE_QUIESCENT;
 			break;
 		default:
-			printf("boot mode: None\n");
-			boot_mode[PL] = BOOT_MODE_UNDEFINE;
+#if defined(CONFIG_ROCKCHIP_RK3568)
+			reg_usbphy_u3_status = readl((void *)CONFIG_USBPHY_U3_GRF_STATUS_REG);
+			if (reg_usbphy_u3_status & (1 << 9)) {
+				printf("usbotg_utmi_bvalid = 1\n");
+#else
+			if (0) {
+#endif
+				boot_mode[PH] = BOOT_MODE_UMS;
+				clear_boot_reg = 1;
+			} else {
+				printf("boot mode: None\n");
+				boot_mode[PL] = BOOT_MODE_UNDEFINE;
+			}
 		}
 	}
 
