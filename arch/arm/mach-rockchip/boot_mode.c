@@ -10,6 +10,7 @@
 #include <asm/io.h>
 #include <asm/arch/boot_mode.h>
 #include <asm/arch-rockchip/gpio.h>
+#include <interface_overlay.h>
 
 #define CONFIG_GRF_SOC_STATUS3_REG 0xff77e2ac
 
@@ -241,10 +242,6 @@ int rockchip_get_boot_mode(void)
 	} else if (misc_require_recovery(bcb_offset, &recovery_msg)) {
 		printf("boot mode: recovery (misc)\n");
 		boot_mode[PM] = BOOT_MODE_RECOVERY;
-#ifdef CONFIG_ROCKCHIP_RK3288
-		if (check_force_enter_ums_mode())
-			boot_mode[PH] = BOOT_MODE_UMS_HW;
-#endif
 	} else {
 		switch (reg_boot_mode) {
 		case BOOT_NORMAL:
@@ -276,24 +273,31 @@ int rockchip_get_boot_mode(void)
 			boot_mode[PL] = BOOT_MODE_WATCHDOG;
 			break;
 		default:
+			{
+			struct hw_config hw_conf;
+			memset(&hw_conf, 0, sizeof(struct hw_config));
+			parse_hw_config(&hw_conf);
+
 #if defined(CONFIG_ROCKCHIP_RK3399)
 			reg_soc_status3 = readl((void *)CONFIG_GRF_SOC_STATUS3_REG);
-			if (reg_soc_status3 & (1 << 12)) {
+			if ((reg_soc_status3 & (1 << 12)) && hw_conf.auto_ums != -1 ) {
 				printf("usbcphy0_otg_utmi_bvalid = 1\n");
 #elif defined(CONFIG_ROCKCHIP_RK3288)
-			if (check_force_enter_ums_mode()) {
+			if (check_force_enter_ums_mode() && hw_conf.auto_ums != -1) {
 #elif defined(CONFIG_ROCKCHIP_RK3568)
 			reg_usbphy_u3_status = readl((void *)CONFIG_USBPHY_U3_GRF_STATUS_REG);
-			if (reg_usbphy_u3_status & (1 << 9)) {
+			if ((reg_usbphy_u3_status & (1 << 9)) && hw_conf.auto_ums != -1) {
 				printf("usbotg_utmi_bvalid = 1\n");
 #else
 			if (0) {
 #endif
-				boot_mode[PH] = BOOT_MODE_UMS_HW;
+				printf("auto_ums config enable, enter ums mode\n");
+				boot_mode[PH] = BOOT_MODE_UMS;
 				clear_boot_reg = 1;
 			} else {
 				printf("boot mode: None\n");
 				boot_mode[PL] = BOOT_MODE_UNDEFINE;
+			}
 			}
 		}
 	}
