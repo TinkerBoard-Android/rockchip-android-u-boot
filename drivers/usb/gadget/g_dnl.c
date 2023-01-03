@@ -41,10 +41,11 @@
 #define MAX_STRING_SERIAL	256
 /* Number of supported configurations */
 #define CONFIGURATION_NUMBER 1
+#define MAX_STRING_PRODUCT	32
 
 #define DRIVER_VERSION		"usb_dnl 2.0"
 
-static const char product[] = "USB download gadget";
+static char product[MAX_STRING_PRODUCT];
 static char g_dnl_serial[MAX_STRING_SERIAL];
 static const char manufacturer[] = "ASUS";
 
@@ -53,6 +54,22 @@ void g_dnl_set_serialnumber(char *s)
 	memset(g_dnl_serial, 0, MAX_STRING_SERIAL);
 	if (s)
 		strncpy(g_dnl_serial, s, MAX_STRING_SERIAL - 1);
+}
+
+void g_dnl_set_product(void)
+{
+	char *boot_devtype = env_get("devtype");
+	char *boot_devnum = env_get("devnum");
+
+	memset(product, 0, MAX_STRING_PRODUCT);
+	if (!strcmp(boot_devtype, "mtd") && !strcmp(boot_devnum, "2"))
+		strncpy(product, "USB download gadget on SPI NOR", MAX_STRING_PRODUCT - 1);
+	else if (!strcmp(boot_devtype, "mmc") && !strcmp(boot_devnum, "0"))
+		strncpy(product, "USB download gadget on eMMC", MAX_STRING_PRODUCT - 1);
+	else if (!strcmp(boot_devtype, "mmc") && !strcmp(boot_devnum, "1"))
+		strncpy(product, "USB download gadget on SD", MAX_STRING_PRODUCT - 1);
+	else
+		strncpy(product, "USB download gadget", MAX_STRING_PRODUCT - 1);
 }
 
 static struct usb_device_descriptor device_desc = {
@@ -237,6 +254,7 @@ static int g_dnl_bind(struct usb_composite_dev *cdev)
 	if (id < 0)
 		return id;
 
+	g_dnl_set_product();
 	g_dnl_string_defs[1].id = id;
 	device_desc.iProduct = id;
 
