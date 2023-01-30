@@ -723,6 +723,10 @@ static int android_image_separate(struct andr_img_hdr *hdr,
 	if (working_fdt != NULL) {
 		if(hw_conf.valid)
 			handle_hw_conf(NULL, working_fdt, &hw_conf);
+
+#ifdef CONFIG_ROCKCHIP_RK3568
+		set_lan_status(working_fdt);
+#endif
 	}
 
 	return 0;

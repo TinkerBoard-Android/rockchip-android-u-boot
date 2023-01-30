@@ -36,6 +36,10 @@ struct hw_config
 	char **overlay_file;
 };
 
+#ifdef CONFIG_ROCKCHIP_RK3568
+void set_lan_status(struct fdt_header *);
+#endif
+
 void parse_cmdline(void);
 
 void parse_hw_config(struct hw_config *);

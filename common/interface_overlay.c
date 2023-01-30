@@ -1,10 +1,15 @@
 #include <common.h>
 #include <malloc.h>
 #include <mapmem.h>
-#include <adc.h>
 #include <interface_overlay.h>
 
 #define MAX_OVERLAY_NAME_LENGTH	128
+
+#ifdef CONFIG_ROCKCHIP_RK3568
+#include <adc.h>
+#define SARADC_DETECT_NUM	2
+static int adc4_odmid = -1, adc5_prjid = -1;
+#endif
 
 static char *devtype, *devnum, *file_addr;
 static unsigned long fdt_addr_r;
@@ -17,6 +22,41 @@ static void verify_devinfo(void)
 		file_addr = env_get("temp_file_addr");
 		fdt_addr_r = env_get_ulong("fdt_addr_r", 16, 0);
 	}
+#ifdef CONFIG_ROCKCHIP_RK3568
+	if (adc4_odmid == -1 || adc5_prjid == -1) {
+		unsigned int in_voltage_raw[SARADC_DETECT_NUM];
+		float voltage_scale = 1.8066, voltage_raw[SARADC_DETECT_NUM], vresult[SARADC_DETECT_NUM];
+		int ret, adc_channel[SARADC_DETECT_NUM] = {4, 5}, id[SARADC_DETECT_NUM];
+
+		for (int i = 0; i < SARADC_DETECT_NUM; i++) {
+			ret = adc_channel_single_shot("saradc", adc_channel[i], &in_voltage_raw[i]);
+			if (ret)
+				id[i] = -1;
+			else {
+				voltage_raw[i] = (float)in_voltage_raw[i];
+				vresult[i] = voltage_raw[i] * voltage_scale;
+
+				if (vresult[i] < 1950 && vresult[i] > 1650)
+					id[i] = 18;
+				else if (vresult[i] < 1650 && vresult[i] > 1350)
+					id[i] = 15;
+				else if (vresult[i] < 1350 && vresult[i] > 1050)
+					id[i] = 12;
+				else if (vresult[i] < 1050 && vresult[i] > 750)
+					id[i] = 9;
+				else if (vresult[i] < 750 && vresult[i] > 450)
+					id[i] = 6;
+				else if (vresult[i] < 450 && vresult[i] > 150)
+					id[i] = 3;
+				else if (vresult[i] < 150)
+					id[i] = 0;
+			}
+		}
+
+		adc4_odmid = id[0];
+		adc5_prjid = id[1];
+	}
+#endif
 }
 
 static unsigned long hw_skip_comment(char *text)
@@ -874,7 +914,7 @@ static int flash_test_clkout(struct fdt_header *working_fdt, char *path, char *p
 
 	printf("flash test_clkout2: %s %s\n", path, property);
 
-	offset = fdt_path_offset (working_fdt, path);
+	offset = fdt_path_offset(working_fdt, path);
 	if (offset < 0) {
 		printf("libfdt fdt_path_offset() returned %s\n", fdt_strerror(offset));
 		return -1;
@@ -917,7 +957,7 @@ static int set_hw_property(struct fdt_header *working_fdt, char *path, char *pro
 	int ret;
 
 	printf("set_hw_property: %s %s %s\n", path, property, value);
-	offset = fdt_path_offset (working_fdt, path);
+	offset = fdt_path_offset(working_fdt, path);
 	if (offset < 0) {
 		printf("libfdt fdt_path_offset() returned %s\n", fdt_strerror(offset));
 		return -1;
@@ -1129,3 +1169,15 @@ void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, struct hw_
 		set_hw_property(working_fdt, "/i2s@fe430000", "status", "disabled", 9);
 #endif
 }
+
+#ifdef CONFIG_ROCKCHIP_RK3568
+void set_lan_status(struct fdt_header *working_fdt)
+{
+	verify_devinfo();
+
+	if ((adc4_odmid == 15 && adc5_prjid == 18) || (adc4_odmid == 18 && adc5_prjid == 12)) {
+		printf("Detect the SKU without LAN1\n");
+		set_hw_property(working_fdt, "/ethernet@fe010000", "status", "disabled", 9);
+	}
+}
+#endif
