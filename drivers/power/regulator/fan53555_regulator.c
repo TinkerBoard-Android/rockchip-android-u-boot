@@ -430,7 +430,7 @@ static int fan53555_regulator_probe(struct udevice *dev)
 {
 	struct fan53555_regulator_info *di = dev_get_priv(dev);
 	struct dm_regulator_uclass_platdata *uc_pdata;
-	u8 val;
+	int val;
 	int ret;
 
 	uc_pdata = dev_get_uclass_platdata(dev);
