@@ -1432,6 +1432,11 @@ static const struct drm_display_mode edid_est_modes[] = {
 };
 
 static const struct drm_display_mode resolution_white[] = {
+	/* ?, vic:? - 1280x800@60Hz ha_101zieb0hh1_a_dgw*/
+	{ DRM_MODE(DRM_MODE_TYPE_DRIVER, 71000, 1280, 1328,
+			1360, 1440, 800, 803, 809, 823, 0,
+			DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC),
+	  .vrefresh = 60, .picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9, },
 	/* ?, vic:? - 800x480@66Hz VGG804826*/
 	{ DRM_MODE(DRM_MODE_TYPE_DRIVER, 32000, 800, 840,
 			888, 928, 480, 493, 496, 525, 0,
