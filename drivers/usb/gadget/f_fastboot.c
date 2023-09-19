@@ -549,6 +549,11 @@ int __weak fb_set_reboot_flag(void)
 	return -ENOSYS;
 }
 
+int __weak fb_clear_reboot_flag(void)
+{
+	return -ENOSYS;
+}
+
 static void cb_reboot(struct usb_ep *ep, struct usb_request *req)
 {
 	char *cmd = req->buf;
@@ -574,6 +579,15 @@ static void cb_reboot(struct usb_ep *ep, struct usb_request *req)
 		}
 	}
 #endif
+
+	/* If the cmd is reboot, clear the bootmode in misc and boot-mode-reg */
+	if ((strlen(cmd) == 6) && (strncmp("reboot", cmd, strlen("reboot")) == 0)) {
+		if (fb_clear_reboot_flag()) {
+			fastboot_tx_write_str("FAILCannot clear reboot flag");
+			return;
+		}
+	}
+
 	fastboot_func->in_req->complete = compl_do_reset;
 	fastboot_tx_write_str("OKAY");
 }

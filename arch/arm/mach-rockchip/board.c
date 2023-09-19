@@ -235,6 +235,15 @@ int fb_set_reboot_flag(void)
 
 	return 0;
 }
+
+int fb_clear_reboot_flag(void)
+{
+	printf("Clearing reboot to fastboot flag ...\n");
+	android_bcb_clear("reboot-bootloader");
+	writel(BOOT_NORMAL, CONFIG_ROCKCHIP_BOOT_MODE_REG);
+
+	return 0;
+}
 #endif
 
 #ifdef CONFIG_ROCKCHIP_USB_BOOT
