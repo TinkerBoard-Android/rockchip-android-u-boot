@@ -149,6 +149,40 @@ int android_bcb_write(char *cmd)
 	return android_bootloader_message_write(dev_desc, &part_info, &message);
 }
 
+int android_bcb_clear(char *cmd)
+{
+	struct android_bootloader_message message = {0};
+	disk_partition_t part_info;
+	struct blk_desc *dev_desc;
+	int ret;
+
+	if (!cmd)
+		return -ENOMEM;
+
+	if (strlen(cmd) >= 32)
+		return -ENOMEM;
+
+	dev_desc = rockchip_get_bootdev();
+	if (!dev_desc) {
+		printf("%s: dev_desc is NULL!\n", __func__);
+		return -ENODEV;
+	}
+
+	ret = part_get_info_by_name(dev_desc, ANDROID_PARTITION_MISC, &part_info);
+	if (ret < 0) {
+		printf("%s: Could not found misc partition, just run recovery\n",
+		       __func__);
+		return -ENODEV;
+	}
+
+	if (!strncmp(cmd, "reboot-bootloader", strlen(cmd)))
+		ret =  android_bootloader_message_write(dev_desc, &part_info, &message);
+	else
+		ret = -EINVAL;
+
+	return ret;
+}
+
 /**
  * Return the reboot reason string for the passed boot mode.
  *

@@ -101,4 +101,12 @@ int android_fdt_overlay_apply(void *fdt_addr);
  */
 int android_bcb_write(char *cmd);
 
+/** android_bcb_clear - clear the android bootloader message.
+ *
+ * @cmd: boot command
+ *
+ * @return 0 on success, otherwise failed.
+ */
+int android_bcb_clear(char *cmd);
+
 #endif  /* __ANDROID_BOOTLOADER_H */
