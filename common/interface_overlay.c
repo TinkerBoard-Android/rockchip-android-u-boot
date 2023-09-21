@@ -126,13 +126,13 @@ void parse_cmdline(void)
 	if (!strcmp(devnum, "0"))
 #ifdef CONFIG_ANDROID_AB
 		fs_argv[2] = "0:12";
-#elif
+#else
 		fs_argv[2] = "0:e";
 #endif
 	else if (!strcmp(devnum, "1"))
 #ifdef CONFIG_ANDROID_AB
 		fs_argv[2] = "1:12";
-#elif
+#else
 		fs_argv[2] = "1:e";
 #endif
 	else {
@@ -751,13 +751,13 @@ void parse_hw_config(struct hw_config *hw_conf)
 	if (!strcmp(tdevnum, "0"))
 #ifdef CONFIG_ANDROID_AB
 		fs_argv[2] = "0:12";
-#elif
+#else
 		fs_argv[2] = "0:e";
 #endif
 	else if (!strcmp(tdevnum, "1"))
 #ifdef CONFIG_ANDROID_AB
 		fs_argv[2] = "1:12";
-#elif
+#else
 		fs_argv[2] = "1:e";
 #endif
 	else {
@@ -885,13 +885,13 @@ static int merge_dts_overlay(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, c
 	if (!strcmp(devnum, "0"))
 #ifdef CONFIG_ANDROID_AB
 		fs_argv[2] = "0:12";
-#elif
+#else
 		fs_argv[2] = "0:e";
 #endif
 	else if (!strcmp(devnum, "1"))
 #ifdef CONFIG_ANDROID_AB
 		fs_argv[2] = "1:12";
-#elif
+#else
 		fs_argv[2] = "1:e";
 #endif
 	else {
