@@ -221,6 +221,15 @@ static int rockchip_set_serialno(void)
 		snprintf(serialno_str, sizeof(serialno_str), "%llx", serialno);
 
 		env_set("serial#", serialno_str);
+
+#ifdef CONFIG_ROCKCHIP_VENDOR_PARTITION
+		printf("serial# write back to vendor storage\n");
+		ret = vendor_storage_write(SN_ID,
+				serialno_str, sizeof(serialno_str));
+		if (ret < 0)
+			printf("%s: vendor_storage_write failed %d\n",
+					__func__, ret);
+#endif
 	}
 
 	return ret;
