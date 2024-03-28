@@ -75,10 +75,8 @@ void hotkey_run(enum hotkey_t id)
 			cli_loop();
 		break;
 	case HK_CLI_OS_GO:
-		if (gd->console_evt == CTRL_L) {
-			//cli_loop();
-			printf("Bypass cli_loop()\n");
-		}
+		if (gd->console_evt == CTRL_L)
+			cli_loop();
 		break;
 	default:
 		break;
