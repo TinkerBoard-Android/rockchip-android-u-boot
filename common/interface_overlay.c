@@ -995,6 +995,46 @@ static int set_hw_property(struct fdt_header *working_fdt, char *path, char *pro
 	return 0;
 }
 
+static ulong get_hw_property_u32(struct fdt_header *working_fdt, char *path, char *property)
+{
+	const u32 *cell;
+	int len;
+
+	int offset;
+
+	printf("get_hw_property_u32: %s %s\n", path, property);
+	offset = fdt_path_offset (working_fdt, path);
+	if (offset < 0) {
+		printf("libfdt fdt_path_offset() returned %s\n", fdt_strerror(offset));
+		return -1;
+	}
+	cell = fdt_getprop(working_fdt, offset, property, &len);
+	if (!cell || len != sizeof(*cell)) {
+		printf("libfdt fdt_getprop() error\n");
+		return -1;
+	}
+	return fdt32_to_cpu(*cell);
+}
+
+static int set_hw_property_u32(struct fdt_header *working_fdt, char *path, char *property, u32 value)
+{
+	int offset;
+	int ret;
+
+	printf("set_hw_property_u32: %s %s %08x\n", path, property, value);
+	offset = fdt_path_offset (working_fdt, path);
+	if (offset < 0) {
+		printf("libfdt fdt_path_offset() returned %s\n", fdt_strerror(offset));
+		return -1;
+	}
+	ret = fdt_setprop_u32(working_fdt, offset, property, value);
+	if (ret < 0) {
+		printf("libfdt fdt_setprop_u32(): %s\n", fdt_strerror(ret));
+		return -1;
+	}
+	return 0;
+}
+
 void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, struct hw_config *hw_conf)
 {
 	if(working_fdt == NULL)
@@ -1014,10 +1054,13 @@ void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, struct hw_
 #endif
 
 #ifdef CONFIG_ROCKCHIP_RK3288
-	if (hw_conf->fiq_debugger == 1)
-		set_hw_property(working_fdt, "/fiq-debugger", "status", "okay", 5);
-	else if (hw_conf->fiq_debugger == -1)
-		set_hw_property(working_fdt, "/fiq-debugger", "status", "disabled", 9);
+	if (hw_conf->fiq_debugger == 1) {
+		int uart3_xfer = get_hw_property_u32(working_fdt, "/pinctrl/uart3/uart3-xfer", "phandle");
+		if (uart3_xfer >= 0)
+			set_hw_property_u32(working_fdt, "/fiq-debugger", "pinctrl-0", uart3_xfer);
+		set_hw_property_u32(working_fdt, "/fiq-debugger", "rockchip,serial-id", 0x00000003);
+	} else if (hw_conf->fiq_debugger == -1)
+		set_hw_property_u32(working_fdt, "/fiq-debugger", "rockchip,serial-id", 0xffffffff);
 
 	if (hw_conf->i2c1 == 1)
 		set_hw_property(working_fdt, "/i2c@ff140000", "status", "okay", 5);
