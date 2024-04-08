@@ -995,6 +995,7 @@ static int set_hw_property(struct fdt_header *working_fdt, char *path, char *pro
 	return 0;
 }
 
+#ifdef CONFIG_ROCKCHIP_RK3288
 static ulong get_hw_property_u32(struct fdt_header *working_fdt, char *path, char *property)
 {
 	const u32 *cell;
@@ -1034,6 +1035,7 @@ static int set_hw_property_u32(struct fdt_header *working_fdt, char *path, char 
 	}
 	return 0;
 }
+#endif
 
 void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, struct hw_config *hw_conf)
 {
