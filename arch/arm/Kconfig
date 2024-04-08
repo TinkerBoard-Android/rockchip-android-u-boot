@@ -21,6 +21,9 @@ config POSITION_INDEPENDENT
 	  relocating itself to the top-of-RAM later during execution.
 endif
 
+config RK3568_TB3N
+	bool "Support Tinker Board 3N"
+
 config STATIC_RELA
 	bool
 	default y if ARM64 && !POSITION_INDEPENDENT
