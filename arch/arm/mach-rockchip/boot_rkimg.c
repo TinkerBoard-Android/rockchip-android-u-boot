@@ -328,6 +328,12 @@ void setup_download_mode(void)
 {
 	int vbus = 1; /* Assumed 1 in case of no rockusb */
 
+#ifdef CONFIG_RK3568_TB3N
+	/* Set it-5201 to SINK mode*/
+	run_command("i2c dev 3", 0);
+	run_command("i2c mw 0x67 0x14 0x02", 0);
+#endif
+
 	boot_devtype_init();
 
 	if (rockchip_dnl_key_pressed() || is_hotkey(HK_ROCKUSB_DNL)) {
