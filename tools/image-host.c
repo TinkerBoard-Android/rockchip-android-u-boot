@@ -11,7 +11,7 @@
 
 #include "mkimage.h"
 #include <bootm.h>
-#include <fdt_region.h>
+#include <linux/libfdt.h>
 #include <image.h>
 #include <version.h>
 #include <uboot_aes.h>

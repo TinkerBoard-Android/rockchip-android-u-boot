@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fdt_region.h>
+#include <linux/libfdt.h>
 
 #include "fdt_host.h"
 #include "libfdt_internal.h"
