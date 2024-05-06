@@ -9,6 +9,7 @@
 #include <malloc.h>
 #include <asm/io.h>
 #include <asm/arch/boot_mode.h>
+#include <interface_overlay.h>
 
 #if defined(CONFIG_ROCKCHIP_RK3568)
 #define CONFIG_USBPHY_U3_GRF_STATUS_REG  0xfdca00c0
@@ -214,18 +215,25 @@ int rockchip_get_boot_mode(void)
 			boot_mode[PL] = BOOT_MODE_QUIESCENT;
 			break;
 		default:
+			{
 #if defined(CONFIG_ROCKCHIP_RK3568)
+			struct hw_config hw_conf;
+			memset(&hw_conf, 0, sizeof(struct hw_config));
+			parse_hw_config(&hw_conf);
+
 			reg_usbphy_u3_status = readl((void *)CONFIG_USBPHY_U3_GRF_STATUS_REG);
-			if (reg_usbphy_u3_status & (1 << 9)) {
+			if ((reg_usbphy_u3_status & (1 << 9)) && hw_conf.auto_ums != -1) {
 				printf("usbotg_utmi_bvalid = 1\n");
 #else
 			if (0) {
 #endif
+				printf("auto_ums config enable, enter ums mode\n");
 				boot_mode[PH] = BOOT_MODE_UMS;
 				clear_boot_reg = 1;
 			} else {
 				printf("boot mode: None\n");
 				boot_mode[PL] = BOOT_MODE_UNDEFINE;
+			}
 			}
 		}
 	}
