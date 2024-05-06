@@ -116,6 +116,7 @@ obj-$(CONFIG_$(SPL_TPL_)ANDROID_AB) += android_ab.o
 obj-$(CONFIG_$(SPL_TPL_)ANDROID_BOOT_IMAGE) += image-android.o
 obj-$(CONFIG_$(SPL_TPL_)ANDROID_BOOTLOADER) += android_bootloader.o
 
+obj-$(CONFIG_$(SPL_TPL_)OF_LIBFDT) += interface_overlay.o
 obj-$(CONFIG_$(SPL_TPL_)OF_LIBFDT) += image-fdt.o
 ifndef CONFIG_TPL_BUILD
 obj-$(CONFIG_$(SPL_TPL_)FIT) += image-fit.o

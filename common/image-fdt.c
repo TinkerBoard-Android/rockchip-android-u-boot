@@ -18,6 +18,7 @@
 #include <mapmem.h>
 #include <asm/io.h>
 #include <sysmem.h>
+#include <interface_overlay.h>
 
 #ifndef CONFIG_SYS_FDT_PAD
 #define CONFIG_SYS_FDT_PAD 0x3000
@@ -239,6 +240,8 @@ int boot_fdt_add_sysmem_rsv_regions(void *fdt_blob)
  */
 int boot_relocate_fdt(struct lmb *lmb, char **of_flat_tree, ulong *of_size)
 {
+	asus_import_config();
+
 	void	*fdt_blob = *of_flat_tree;
 	void	*of_start = NULL;
 	char	*fdt_high;
