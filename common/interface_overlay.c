@@ -158,9 +158,9 @@ void parse_cmdline(void)
 
 	printf("cmdline.txt size = %lu\n", size);
 
-	*((char *)file_addr + size) = 0x00;
+	*((char *)(addr + size)) = 0x00;
 
-	while(offset != size)
+	while(offset < size)
 	{
 		count = hw_skip_comment((char *)(addr + offset));
 		if(count > 0) {
@@ -182,6 +182,8 @@ void parse_cmdline(void)
 		}
 	}
 
+	if(offset > size)
+		valid = -1;
 end:
 	printf("cmdline.txt valid = %d\n", valid);
 }
@@ -785,9 +787,9 @@ void parse_hw_config(struct hw_config *hw_conf)
 	valid = 1;
 	printf("config.txt size = %lu\n", size);
 
-	*((char *)tfile_addr + size) = 0x00;
+	*((char *)(addr + size)) = 0x00;
 
-	while(offset != size)
+	while(offset < size)
 	{
 		count = hw_skip_comment((char *)(addr + offset));
 		if(count > 0) {
@@ -808,6 +810,9 @@ void parse_hw_config(struct hw_config *hw_conf)
 			break;
 		}
 	}
+
+	if(offset > size)
+		valid = -1;
 end:
 	hw_conf->valid = valid;
 }
