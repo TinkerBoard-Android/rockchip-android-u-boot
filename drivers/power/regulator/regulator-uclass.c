@@ -8,6 +8,7 @@
 #include <common.h>
 #include <errno.h>
 #include <dm.h>
+#include <dm/device-internal.h>
 #include <dm/uclass-internal.h>
 #include <power/pmic.h>
 #include <power/regulator.h>
@@ -385,6 +386,9 @@ static bool regulator_name_is_unique(struct udevice *check_dev,
 		if (len != check_len)
 			continue;
 
+                if(!strcmp(uc_pdata->name,"vdd_cpu"))
+                        continue;
+
 		if (!strcmp(uc_pdata->name, check_name))
 			return false;
 	}
@@ -507,9 +511,15 @@ int regulators_enable_boot_on(bool verbose)
 	ret = uclass_get(UCLASS_REGULATOR, &uc);
 	if (ret)
 		return ret;
-	for (uclass_first_device(UCLASS_REGULATOR, &dev);
+
+        for (uclass_find_first_device(UCLASS_REGULATOR, &dev);
 	     dev;
-	     uclass_next_device(&dev)) {
+             uclass_find_next_device(&dev)) {
+
+                ret = device_probe(dev);
+                if (ret)
+                        continue;
+
 		ret = regulator_autoset(dev);
 
 		if (ret == -EMEDIUMTYPE)
