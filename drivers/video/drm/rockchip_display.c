@@ -1422,6 +1422,60 @@ static void *rockchip_logo_rotate(struct logo_info *logo, void *src)
 	return dst_rotate;
 }
 
+int read_bmp_header(struct bmp_header *header)
+{
+	#define BMP_SIGNATURE_0 'B'
+	#define BMP_SIGNATURE_1 'M'
+	struct blk_desc *dev_desc;
+	disk_partition_t part_info;
+	int cnt, ret;
+	//char* buf = (char*) header;
+
+	dev_desc = rockchip_get_bootdev();
+	ret = part_get_info_by_name(dev_desc, "splash", &part_info);
+	if (ret < 0) {
+		printf("read_bmp_header: get splash partition fail.\n");
+		return 0;
+	}
+
+	cnt = DIV_ROUND_UP(RK_BLK_SIZE, dev_desc->blksz);
+	//bmsg = memalign(ARCH_DMA_MINALIGN, cnt * dev_desc->blksz);
+	if (blk_dread(dev_desc, part_info.start , cnt, header) != cnt) {
+		printf("read_bmp_header: fail to read BMP header sector");
+		return 0;
+	}
+
+	if (header->signature[0] !=  BMP_SIGNATURE_0 ||
+		header->signature[1] !=  BMP_SIGNATURE_1) {
+		printf("read_bmp_header:BMP singature incorrectly 0x%x 0x%x", header->signature[0], header->signature[1]);
+		return 0;
+	}
+
+	return RK_BLK_SIZE;
+}
+
+int read_bmp_from_splash(void *buf, int offset, int len)
+{
+	struct blk_desc *dev_desc;
+	disk_partition_t part_info;
+	int cnt, ret, sector;
+
+	dev_desc = rockchip_get_bootdev();
+	ret = part_get_info_by_name(dev_desc, "splash", &part_info);
+	if (ret < 0) {
+		printf("read_bmp_from_splash: get splash partition fail.\n");
+		return 0;
+	}
+	cnt = DIV_ROUND_UP(len, dev_desc->blksz);
+	//bmsg = memalign(ARCH_DMA_MINALIGN, cnt * dev_desc->blksz);
+	sector = blk_dread(dev_desc, part_info.start+offset , cnt, buf);
+	if (sector != cnt) {
+		printf("read_bmp_from_splash: cshould read %d sector but read %d setcor only\n", cnt, sector);
+	}
+
+	return len;
+}
+
 static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 {
 #ifdef CONFIG_ROCKCHIP_RESOURCE_IMAGE
@@ -1438,6 +1492,7 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	void *dst_rotate = NULL;
 	int len, dst_size;
 	int ret = 0;
+	struct bmp_header *header;
 
 	if (!logo || !bmp_name)
 		return -EINVAL;
@@ -1451,13 +1506,24 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 		return 0;
 	}
 
+	header = malloc(RK_BLK_SIZE);
+	if (!header)
+		return -ENOMEM;
+
 	bmp_data = malloc(MAX_IMAGE_BYTES);
 	if (!bmp_data)
 		return -ENOMEM;
 
 	bmp_create(&bmp, &bitmap_callbacks);
 
-	len = rockchip_read_resource_file(bmp_data, bmp_name, 0, MAX_IMAGE_BYTES);
+	len = read_bmp_header(header);
+	if (len == 0) {
+		len = rockchip_read_resource_file(bmp_data, bmp_name, 0, MAX_IMAGE_BYTES);
+	}
+	else {
+		len = read_bmp_from_splash(bmp_data, 0, MAX_IMAGE_BYTES);
+	}
+
 	if (len < 0) {
 		ret = -EINVAL;
 		goto free_bmp_data;
