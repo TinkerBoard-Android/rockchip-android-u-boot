@@ -363,7 +363,7 @@ out:
 }
 #endif
 
-#if CONFIG_IS_ENABLED(FIT_SIGNATURE)
+#ifdef CONFIG_FIT_SIGNATURE
 /**
  * rsa_verify_key() - Verify a signature against some data using RSA Key
  *
@@ -495,7 +495,7 @@ static int rsa_get_key_prop(struct key_prop *prop, struct image_sign_info *info,
 }
 #endif
 
-#if CONFIG_IS_ENABLED(FIT_SIGNATURE)
+#ifdef CONFIG_FIT_SIGNATURE
 /**
  * rsa_verify_with_keynode() - Verify a signature against some data using
  * information in node with prperties of RSA Key like modulus, exponent etc.
@@ -532,7 +532,7 @@ static int rsa_verify_with_keynode(struct image_sign_info *info,
 }
 #endif
 
-#if CONFIG_IS_ENABLED(FIT_SIGNATURE)
+#ifdef CONFIG_FIT_SIGNATURE
 int rsa_verify(struct image_sign_info *info,
 	       const struct image_region region[], int region_count,
 	       uint8_t *sig, uint sig_len)
@@ -560,44 +560,42 @@ int rsa_verify(struct image_sign_info *info,
 		return -EINVAL;
 	}
 
-	if (CONFIG_IS_ENABLED(FIT_SIGNATURE)) {
-		const void *blob = info->fdt_blob;
-		int ndepth, noffset;
-		int sig_node, node;
-		char name[100];
+	const void *blob = info->fdt_blob;
+	int ndepth, noffset;
+	int sig_node, node;
+	char name[100];
 
-		sig_node = fdt_subnode_offset(blob, 0, FIT_SIG_NODENAME);
-		if (sig_node < 0) {
-			debug("%s: No signature node found\n", __func__);
-			return -ENOENT;
-		}
+	sig_node = fdt_subnode_offset(blob, 0, FIT_SIG_NODENAME);
+	if (sig_node < 0) {
+		debug("%s: No signature node found\n", __func__);
+		return -ENOENT;
+	}
 
-		/* See if we must use a particular key */
-		if (info->required_keynode != -1) {
-			ret = rsa_verify_with_keynode(info, hash, sig, sig_len,
-						      info->required_keynode);
-			return ret;
-		}
+	/* See if we must use a particular key */
+	if (info->required_keynode != -1) {
+		ret = rsa_verify_with_keynode(info, hash, sig, sig_len,
+					      info->required_keynode);
+		return ret;
+	}
 
-		/* Look for a key that matches our hint */
-		snprintf(name, sizeof(name), "key-%s", info->keyname);
-		node = fdt_subnode_offset(blob, sig_node, name);
-		ret = rsa_verify_with_keynode(info, hash, sig, sig_len, node);
-		if (!ret)
-			return ret;
+	/* Look for a key that matches our hint */
+	snprintf(name, sizeof(name), "key-%s", info->keyname);
+	node = fdt_subnode_offset(blob, sig_node, name);
+	ret = rsa_verify_with_keynode(info, hash, sig, sig_len, node);
+	if (!ret)
+		return ret;
 
-		/* No luck, so try each of the keys in turn */
-		for (ndepth = 0, noffset = fdt_next_node(info->fit, sig_node,
-							 &ndepth);
-		     (noffset >= 0) && (ndepth > 0);
-		     noffset = fdt_next_node(info->fit, noffset, &ndepth)) {
-			if (ndepth == 1 && noffset != node) {
-				ret = rsa_verify_with_keynode(info, hash,
-							      sig, sig_len,
-							      noffset);
-				if (!ret)
-					break;
-			}
+	/* No luck, so try each of the keys in turn */
+	for (ndepth = 0, noffset = fdt_next_node(info->fit, sig_node,
+						 &ndepth);
+	     (noffset >= 0) && (ndepth > 0);
+	     noffset = fdt_next_node(info->fit, noffset, &ndepth)) {
+		if (ndepth == 1 && noffset != node) {
+			ret = rsa_verify_with_keynode(info, hash,
+						      sig, sig_len,
+						      noffset);
+			if (!ret)
+				break;
 		}
 	}
 
@@ -730,5 +728,6 @@ error:
 
 	return ret;
 }
+#endif
 #endif
 #endif
