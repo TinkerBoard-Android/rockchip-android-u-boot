@@ -28,7 +28,6 @@
  */
 int fdt_remove_unused_strings(const void *old, void *new);
 
-int fit_check_sign(const void *fit, const void *key, int is_spl,
-		   const char *fit_uname_config);
+int fit_check_sign(const void *working_fdt, const void *key, int is_spl);
 
 #endif /* __FDT_HOST_H__ */
