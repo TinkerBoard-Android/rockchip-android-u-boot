@@ -24,6 +24,9 @@ endif
 config RK3568_TB3N
 	bool "Support Tinker Board 3N"
 
+config RK3566_TB3
+	bool "Support Tinker Board 3"
+
 config STATIC_RELA
 	bool
 	default y if ARM64 && !POSITION_INDEPENDENT
