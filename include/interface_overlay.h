@@ -25,11 +25,19 @@ struct hw_config
 	int gmac;
 #endif
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 	int uart4, uart9;
 	int i2c5, i2s3_2ch, spi3, spdif_8ch;
 	int pwm12, pwm13, pwm14, pwm15;
 #endif
+
+#ifdef CONFIG_RK3566_TB3
+	int uart0, uart1, uart4;
+	int i2c1, i2c5, i2s3_2ch, spi2, spi3, spdif_8ch;
+	int pwm0, pwm1, pwm2, pwm5, pwm7, pwm8, pwm9, pwm12, pwm13, pwm14, pwm15;
+	int xin32k;
+#endif
+
 	int auto_ums;
 
 	int overlay_count;

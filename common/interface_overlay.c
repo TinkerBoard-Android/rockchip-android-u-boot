@@ -5,7 +5,7 @@
 
 #define MAX_OVERLAY_NAME_LENGTH	128
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 #include <adc.h>
 #define SARADC_DETECT_NUM	2
 static int adc4_odmid = -1, adc5_prjid = -1;
@@ -22,7 +22,7 @@ static void verify_devinfo(void)
 		file_addr = env_get("temp_file_addr");
 		fdt_addr_r = env_get_ulong("fdt_addr_r", 16, 0);
 	}
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 	if (adc4_odmid == -1 || adc5_prjid == -1) {
 		unsigned int in_voltage_raw[SARADC_DETECT_NUM];
 		float voltage_scale = 1.8066, voltage_raw[SARADC_DETECT_NUM], vresult[SARADC_DETECT_NUM];
@@ -202,8 +202,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->fiq_debugger = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2c1=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -212,8 +211,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c1 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2c4=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -222,8 +220,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c4 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "spi0=", 5) == 0) {
 		i = 5;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -233,8 +230,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi0 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "spi2=", 5) == 0) {
 		i = 5;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -243,8 +239,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi2 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "pwm2=", 5) == 0) {
 		i = 5;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -254,8 +249,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm2 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "pwm3=", 5) == 0) {
 		i = 5;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -265,8 +259,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm3 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "uart1=", 6) == 0) {
 		i = 6;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -275,8 +268,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart1 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
         } else if (memcmp(text, "uart2=", 6) == 0) {
 		i = 6;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -287,8 +279,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart2 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
         } else if (memcmp(text, "uart3=", 6) == 0) {
 		i = 6;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -298,8 +289,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart3 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "uart4=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -309,8 +299,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart4 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "pcm_i2s=", 8) == 0) {
 		i = 8;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -319,8 +308,8 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pcm_i2s = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
+	}
 #endif
 
 #ifdef CONFIG_ROCKCHIP_RK3399
@@ -332,8 +321,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c6 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2c7=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -342,8 +330,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c7 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "uart0=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -352,8 +339,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart0 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "uart4=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -363,8 +349,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart4 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2s0=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -373,8 +358,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2s0 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spi1=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -384,8 +368,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi1 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spi5=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -394,8 +377,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi5 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm0=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -404,8 +386,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm0 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm1=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -414,8 +395,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm1 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm3a=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -424,8 +404,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm3a = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spdif=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -434,8 +413,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spdif = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "test_clkout2=", 13) == 0) {
 		i = 13;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -444,11 +422,11 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->test_clkout2 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
+	}
 #endif
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 	if(memcmp(text, "uart4=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -457,8 +435,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart4 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2c5=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -467,8 +444,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c5 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "uart9=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -481,8 +457,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart9 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm12=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -494,8 +469,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm12 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm13=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -507,8 +481,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm13 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm14=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -519,8 +492,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm14 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm15=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -531,8 +503,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm15 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spdif_8ch=", 10) == 0) {
 		i = 10;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -543,8 +514,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spdif_8ch = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spi3=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -560,8 +530,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi3 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2s3_2ch=", 9) == 0) {
 		i = 9;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -577,22 +546,225 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2s3_2ch = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
-#endif
-	} else
-		goto invalid_line;
-
-	while(*(text + i) != 0x00)
-	{
-		if(*(text + (i++)) == 0x0a)
-			break;
+		}
 	}
-	return i;
+#endif
 
-invalid_line:
-	//It's not a legal line, skip it.
-	//printf("get_value: illegal line\n");
+#ifdef CONFIG_RK3566_TB3
+	if(memcmp(text, "uart0=", 6) == 0) {
+		i = 6;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->uart0 = 1;
+			i = i + 2;
+			hw_conf->pwm0 = -1;
+			hw_conf->pwm1 = -1;
+			hw_conf->pwm2 = -1;
+			hw_conf->pwm5 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->uart0 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "uart1=", 6) == 0) {
+		i = 6;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->uart1 = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->uart1 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "uart4=", 6) == 0) {
+		i = 6;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->uart4 = 1;
+			i = i + 2;
+			hw_conf->pwm8 = -1;
+			hw_conf->pwm9 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->uart4 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "i2c1=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->i2c1 = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->i2c1 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "i2c5=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->i2c5 = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->i2c5 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "i2s3_2ch=", 9) == 0) {
+		i = 9;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->i2s3_2ch = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->i2s3_2ch = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "spi2=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->spi2 = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->spi2 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "spi3=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->spi3 = 1;
+			i = i + 2;
+			hw_conf->pwm12 = -1;
+			hw_conf->pwm13 = -1;
+			hw_conf->pwm14 = -1;
+			hw_conf->pwm15 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->spi3 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "spdif_8ch=", 10) == 0) {
+		i = 10;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->spdif_8ch = 1;
+			i = i + 2;
+			hw_conf->pwm15 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->spdif_8ch = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm0=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm0 = 1;
+			i = i + 2;
+			hw_conf->uart0 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm0 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm1=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm1 = 1;
+			i = i + 2;
+			hw_conf->uart0 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm1 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm2=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm2 = 1;
+			i = i + 2;
+			hw_conf->uart0 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm2 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm5=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm5 = 1;
+			i = i + 2;
+			hw_conf->uart0 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm5 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm7=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm7 = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm7 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm8=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm8 = 1;
+			i = i + 2;
+			hw_conf->uart4 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm8 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm9=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm9 = 1;
+			i = i + 2;
+			hw_conf->uart4 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm9 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm12=", 6) == 0) {
+		i = 6;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm12 = 1;
+			i = i + 2;
+			hw_conf->spi3 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm12 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm13=", 6) == 0) {
+		i = 6;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm13 = 1;
+			i = i + 2;
+			hw_conf->spi3 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm13 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm14=", 6) == 0) {
+		i = 6;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm14 = 1;
+			i = i + 2;
+			hw_conf->spi3 = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm14 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "pwm15=", 6) == 0) {
+		i = 6;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm15 = 1;
+			i = i + 2;
+			hw_conf->spi3 = -1;
+			hw_conf->spdif_8ch = -1;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm15 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "xin32k=", 7) == 0) {
+		i = 7;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->xin32k = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->xin32k = -1;
+			i = i + 3;
+		}
+	}
+#endif
+
 	while(*(text + i) != 0x00)
 	{
 		if(*(text + (i++)) == 0x0a)
@@ -986,6 +1158,7 @@ static int flash_test_clkout(struct fdt_header *working_fdt, char *path, char *p
 }
 #endif
 
+#if defined(CONFIG_ROCKCHIP_RK3288) || defined(CONFIG_ROCKCHIP_RK3399) || defined(CONFIG_RK3568_TB3N) || defined(CONFIG_RK3566_TB3)
 static int set_hw_property(struct fdt_header *working_fdt, char *path, char *property, char *value, int length)
 {
 	int offset;
@@ -1005,6 +1178,7 @@ static int set_hw_property(struct fdt_header *working_fdt, char *path, char *pro
 
 	return 0;
 }
+#endif
 
 #ifdef CONFIG_ROCKCHIP_RK3288
 static ulong get_hw_property_u32(struct fdt_header *working_fdt, char *path, char *property)
@@ -1197,7 +1371,7 @@ static void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, str
 		set_hw_property(working_fdt, "/ethernet@fe300000", "wakeup-enable", "0", 2);
 #endif
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 	if (hw_conf->uart4 == 1)
 		set_hw_property(working_fdt, "/serial@fe680000", "status", "okay", 5);
 	else if (hw_conf->uart4 == -1)
@@ -1248,9 +1422,116 @@ static void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, str
 	else if (hw_conf->i2s3_2ch == -1)
 		set_hw_property(working_fdt, "/i2s@fe430000", "status", "disabled", 9);
 #endif
+
+#ifdef CONFIG_RK3566_TB3
+	if (hw_conf->uart0 == 1)
+		set_hw_property(working_fdt, "/serial@fdd50000", "status", "okay", 5);
+	else if (hw_conf->uart0 == -1)
+		set_hw_property(working_fdt, "/serial@fdd50000", "status", "disabled", 9);
+
+	if (hw_conf->uart1 == 1)
+		set_hw_property(working_fdt, "/serial@fe650000", "status", "okay", 5);
+	else if (hw_conf->uart1 == -1)
+		set_hw_property(working_fdt, "/serial@fe650000", "status", "disabled", 9);
+
+	if (hw_conf->uart4 == 1)
+		set_hw_property(working_fdt, "/serial@fe680000", "status", "okay", 5);
+	else if (hw_conf->uart4 == -1)
+		set_hw_property(working_fdt, "/serial@fe680000", "status", "disabled", 9);
+
+	if (hw_conf->i2c1 == 1)
+		set_hw_property(working_fdt, "/i2c@fe5a0000", "status", "okay", 5);
+	else if (hw_conf->i2c1 == -1)
+		set_hw_property(working_fdt, "/i2c@fe5a0000", "status", "disabled", 9);
+
+	if (hw_conf->i2c5 == 1)
+		set_hw_property(working_fdt, "/i2c@fe5e0000", "status", "okay", 5);
+	else if (hw_conf->i2c5 == -1)
+		set_hw_property(working_fdt, "/i2c@fe5e0000", "status", "disabled", 9);
+
+	if (hw_conf->i2s3_2ch == 1)
+		set_hw_property(working_fdt, "/i2s@fe430000", "status", "okay", 5);
+	else if (hw_conf->i2s3_2ch == -1)
+		set_hw_property(working_fdt, "/i2s@fe430000", "status", "disabled", 9);
+
+	if (hw_conf->spi2 == 1)
+		set_hw_property(working_fdt, "/spi@fe630000", "status", "okay", 5);
+	else if (hw_conf->spi2 == -1)
+		set_hw_property(working_fdt, "/spi@fe630000", "status", "disabled", 9);
+
+	if (hw_conf->spi3 == 1)
+		set_hw_property(working_fdt, "/spi@fe640000", "status", "okay", 5);
+	else if (hw_conf->spi3 == -1)
+		set_hw_property(working_fdt, "/spi@fe640000", "status", "disabled", 9);
+
+	if (hw_conf->spdif_8ch == 1)
+		set_hw_property(working_fdt, "/spdif@fe460000", "status", "okay", 5);
+	else if (hw_conf->spdif_8ch == -1)
+		set_hw_property(working_fdt, "/spdif@fe460000", "status", "disabled", 9);
+
+	if (hw_conf->pwm0 == 1)
+		set_hw_property(working_fdt, "/pwm@fdd70000", "status", "okay", 5);
+	else if (hw_conf->pwm0 == -1)
+		set_hw_property(working_fdt, "/pwm@fdd70000", "status", "disabled", 9);
+
+	if (hw_conf->pwm1 == 1)
+		set_hw_property(working_fdt, "/pwm@fdd70010", "status", "okay", 5);
+	else if (hw_conf->pwm1 == -1)
+		set_hw_property(working_fdt, "/pwm@fdd70010", "status", "disabled", 9);
+
+	if (hw_conf->pwm2 == 1)
+		set_hw_property(working_fdt, "/pwm@fdd70020", "status", "okay", 5);
+	else if (hw_conf->pwm2 == -1)
+		set_hw_property(working_fdt, "/pwm@fdd70020", "status", "disabled", 9);
+
+	if (hw_conf->pwm5 == 1)
+		set_hw_property(working_fdt, "/pwm@fe6e0010", "status", "okay", 5);
+	else if (hw_conf->pwm5 == -1)
+		set_hw_property(working_fdt, "/pwm@fe6e0010", "status", "disabled", 9);
+
+	if (hw_conf->pwm7 == 1)
+		set_hw_property(working_fdt, "/pwm@fe6e0030", "status", "okay", 5);
+	else if (hw_conf->pwm7 == -1)
+		set_hw_property(working_fdt, "/pwm@fe6e0030", "status", "disabled", 9);
+
+	if (hw_conf->pwm8 == 1)
+		set_hw_property(working_fdt, "/pwm@fe6f0000", "status", "okay", 5);
+	else if (hw_conf->pwm8 == -1)
+		set_hw_property(working_fdt, "/pwm@fe6f0000", "status", "disabled", 9);
+
+	if (hw_conf->pwm9 == 1)
+		set_hw_property(working_fdt, "/pwm@fe6f0010", "status", "okay", 5);
+	else if (hw_conf->pwm9 == -1)
+		set_hw_property(working_fdt, "/pwm@fe6f0010", "status", "disabled", 9);
+
+	if (hw_conf->pwm12 == 1)
+		set_hw_property(working_fdt, "/pwm@fe700000", "status", "okay", 5);
+	else if (hw_conf->pwm12 == -1)
+		set_hw_property(working_fdt, "/pwm@fe700000", "status", "disabled", 9);
+
+	if (hw_conf->pwm13 == 1)
+		set_hw_property(working_fdt, "/pwm@fe700010", "status", "okay", 5);
+	else if (hw_conf->pwm13 == -1)
+		set_hw_property(working_fdt, "/pwm@fe700010", "status", "disabled", 9);
+
+	if (hw_conf->pwm14 == 1)
+		set_hw_property(working_fdt, "/pwm@fe700020", "status", "okay", 5);
+	else if (hw_conf->pwm14 == -1)
+		set_hw_property(working_fdt, "/pwm@fe700020", "status", "disabled", 9);
+
+	if (hw_conf->pwm15 == 1)
+		set_hw_property(working_fdt, "/pwm@fe700030", "status", "okay", 5);
+	else if (hw_conf->pwm15 == -1)
+		set_hw_property(working_fdt, "/pwm@fe700030", "status", "disabled", 9);
+
+	if (hw_conf->xin32k == 1)
+		set_hw_property(working_fdt, "/xin32k", "status", "okay", 5);
+	else if (hw_conf->xin32k == -1)
+		set_hw_property(working_fdt, "/xin32k", "status", "disabled", 9);
+#endif
 }
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 void set_lan_status(struct fdt_header *working_fdt)
 {
 	verify_devinfo();
@@ -1305,7 +1586,7 @@ void asus_import_config(void)
 		printf("conf.gmac = %d\n", hw_conf.gmac);
 #endif
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 		printf("intf.uart4 = %d\n", hw_conf.uart4);
 		printf("intf.i2c5 = %d\n", hw_conf.i2c5);
 		printf("intf.uart9 = %d\n", hw_conf.uart9);
@@ -1316,6 +1597,30 @@ void asus_import_config(void)
 		printf("intf.spdif_8ch = %d\n", hw_conf.spdif_8ch);
 		printf("intf.spi3 = %d\n", hw_conf.spi3);
 		printf("intf.i2s3_2ch = %d\n", hw_conf.i2s3_2ch);
+#endif
+
+#ifdef CONFIG_RK3566_TB3
+		printf("intf.uart0 = %d\n", hw_conf.uart0);
+		printf("intf.uart1 = %d\n", hw_conf.uart1);
+		printf("intf.uart4 = %d\n", hw_conf.uart1);
+		printf("intf.i2c1 = %d\n", hw_conf.i2c1);
+		printf("intf.i2c5 = %d\n", hw_conf.i2c5);
+		printf("intf.i2s3_2ch = %d\n", hw_conf.i2s3_2ch);
+		printf("intf.spi2 = %d\n", hw_conf.spi2);
+		printf("intf.spi3 = %d\n", hw_conf.spi3);
+		printf("intf.spdif_8ch = %d\n", hw_conf.spdif_8ch);
+		printf("intf.pwm0 = %d\n", hw_conf.pwm0);
+		printf("intf.pwm1 = %d\n", hw_conf.pwm1);
+		printf("intf.pwm2 = %d\n", hw_conf.pwm2);
+		printf("intf.pwm5 = %d\n", hw_conf.pwm5);
+		printf("intf.pwm7 = %d\n", hw_conf.pwm7);
+		printf("intf.pwm8 = %d\n", hw_conf.pwm8);
+		printf("intf.pwm9 = %d\n", hw_conf.pwm9);
+		printf("intf.pwm12 = %d\n", hw_conf.pwm12);
+		printf("intf.pwm13 = %d\n", hw_conf.pwm13);
+		printf("intf.pwm14 = %d\n", hw_conf.pwm14);
+		printf("intf.pwm15 = %d\n", hw_conf.pwm15);
+		printf("intf.xin32k = %d\n", hw_conf.xin32k);
 #endif
 		printf("conf.auto_ums = %d\n", hw_conf.auto_ums);
 
@@ -1328,7 +1633,7 @@ void asus_import_config(void)
 		if(hw_conf.valid)
 			handle_hw_conf(NULL, working_fdt, &hw_conf);
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 		set_lan_status(working_fdt);
 #endif
 	}
