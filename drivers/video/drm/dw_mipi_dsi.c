@@ -247,6 +247,7 @@ struct dw_mipi_dsi {
 	struct mipi_dphy dphy;
 	struct drm_display_mode mode;
 	bool data_swap;
+	bool dual_channel;
 
 	const struct dw_mipi_dsi_plat_data *pdata;
 };
@@ -1096,7 +1097,8 @@ static int dw_mipi_dsi_connector_init(struct rockchip_connector *conn, struct di
 	dsi->dphy.phy = conn->phy;
 
 	conn_state->output_mode = ROCKCHIP_OUT_MODE_P888;
-	conn_state->color_space = V4L2_COLORSPACE_DEFAULT;
+	conn_state->color_encoding = DRM_COLOR_YCBCR_BT709;
+	conn_state->color_range = DRM_COLOR_YCBCR_FULL_RANGE;
 	conn_state->output_if |=
 		dsi->id ? VOP_OUTPUT_IF_MIPI1 : VOP_OUTPUT_IF_MIPI0;
 
@@ -1118,7 +1120,7 @@ static int dw_mipi_dsi_connector_init(struct rockchip_connector *conn, struct di
 	}
 #endif
 
-	if (dsi->lanes > 4) {
+	if (dsi->dual_channel) {
 		struct udevice *dev;
 		int ret;
 
@@ -1346,6 +1348,7 @@ static int dw_mipi_dsi_probe(struct udevice *dev)
 	dsi->dev = dev;
 	dsi->pdata = pdata;
 	dsi->id = id;
+	dsi->dual_channel = dev_read_bool(dsi->dev, "rockchip,dual-channel");
 	dsi->data_swap = dev_read_bool(dsi->dev, "rockchip,data-swap");
 
 	rockchip_connector_bind(&dsi->connector, dev, dsi->id, &dw_mipi_dsi_connector_funcs, NULL,

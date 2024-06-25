@@ -118,6 +118,12 @@ static struct mm_region rk3562_mem_map[] = {
 			 PTE_BLOCK_NON_SHARE |
 			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	}, {
+		.virt = 0x100000000UL,
+		.phys = 0x100000000UL,
+		.size = 0x100000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+			 PTE_BLOCK_INNER_SHARE
+	}, {
 		/* List terminator */
 		0,
 	}
@@ -529,6 +535,19 @@ int fit_standalone_release(char *id, uintptr_t entry_point)
 	return 0;
 }
 
+void board_set_iomux(enum if_type if_type, int devnum, int routing)
+{
+	switch (if_type) {
+	case IF_TYPE_MTD:
+		/* FSPI */
+		writel(0xffff2222, GPIO1_IOC_BASE + GPIO1A_IOMUX_SEL_L);
+		writel(0x00ff0022, GPIO1_IOC_BASE + GPIO1B_IOMUX_SEL_L);
+		break;
+	default:
+		printf("Bootdev 0x%x is not support\n", if_type);
+	}
+}
+
 #if defined(CONFIG_SPL_BUILD) && !defined(CONFIG_TPL_BUILD)
 static void qos_priority_init(void)
 {
@@ -611,9 +630,11 @@ static void qos_priority_init(void)
 
 	writel(0x5, PCIE_SHAPING_REG);
 }
+#endif
 
 int arch_cpu_init(void)
 {
+#if defined(CONFIG_SPL_BUILD) || defined(CONFIG_SUPPORT_USBPLUG)
 	u32 val;
 
 	/* Set the emmc to access ddr memory */
@@ -667,8 +688,10 @@ int arch_cpu_init(void)
 	}
 #endif
 
+#if !defined(CONFIG_TPL_BUILD)
 	qos_priority_init();
+#endif
+#endif /* #if defined(CONFIG_SPL_BUILD) || defined(CONFIG_SUPPORT_USBPLUG) */
 
 	return 0;
 }
-#endif

@@ -17,6 +17,7 @@
 #include <dm.h>
 #include <misc.h>
 #include <mmc.h>
+#include <scsi.h>
 #include <stdlib.h>
 #include <usbplug.h>
 
@@ -287,6 +288,10 @@ static int rkusb_do_read_flash_info(struct fsg_common *common,
 		.flash_mask = 0
 	};
 
+	/* Set the raw block size for tools to creat GPT with 4K block size */
+	if (desc->rawblksz == 0x1000)
+		finfo.manufacturer = 208;
+
 	finfo.flash_size = (u32)desc->lba;
 
 	if (desc->if_type == IF_TYPE_MTD &&
@@ -297,6 +302,11 @@ static int rkusb_do_read_flash_info(struct fsg_common *common,
 		if (mtd) {
 			finfo.block_size = mtd->erasesize >> 9;
 			finfo.page_size = mtd->writesize >> 9;
+#ifdef CONFIG_SUPPORT_USBPLUG
+			/* Using 4KB pagesize as 2KB for idblock */
+			if (finfo.page_size == 8 && desc->devnum == BLK_MTD_SPI_NAND)
+				finfo.page_size |= (4 << 4);
+#endif
 		}
 	}
 
@@ -762,6 +772,12 @@ static int rkusb_do_switch_storage(struct fsg_common *common)
 		type = IF_TYPE_MTD;
 		devnum = 2;
 		break;
+#if defined(CONFIG_SCSI) && defined(CONFIG_CMD_SCSI) && (defined(CONFIG_AHCI) || defined(CONFIG_UFS))
+	case BOOT_TYPE_SATA:
+		type = IF_TYPE_SCSI;
+		devnum = 0;
+		break;
+#endif
 	default:
 		printf("Bootdev 0x%x is not support\n", media);
 		return -ENODEV;
@@ -780,6 +796,7 @@ static int rkusb_do_switch_storage(struct fsg_common *common)
 		return -ENODEV;
 	}
 
+	common->luns[common->lun].num_sectors = block_dev->lba;
 	ums[common->lun].num_sectors = block_dev->lba;
 	ums[common->lun].block_dev = *block_dev;
 

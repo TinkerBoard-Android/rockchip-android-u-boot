@@ -17,6 +17,7 @@
 #include <linux/compat.h>
 #include <linux/media-bus-format.h>
 #include <malloc.h>
+#include <memalign.h>
 #include <video.h>
 #include <video_rockchip.h>
 #include <video_bridge.h>
@@ -139,8 +140,8 @@ int rockchip_get_baseparameter(void)
 {
 	struct blk_desc *dev_desc;
 	disk_partition_t part_info;
-	int block_num = 2048;
-	char baseparameter_buf[block_num * RK_BLK_SIZE] __aligned(ARCH_DMA_MINALIGN);
+	int block_num;
+	char *baseparameter_buf;
 	int ret = 0;
 
 	dev_desc = rockchip_get_bootdev();
@@ -154,10 +155,17 @@ int rockchip_get_baseparameter(void)
 		return -ENOENT;
 	}
 
+	block_num = BLOCK_CNT(sizeof(base_parameter), dev_desc);
+	baseparameter_buf = memalign(ARCH_DMA_MINALIGN, block_num * dev_desc->blksz);
+	if (!baseparameter_buf) {
+		printf("failed to alloc memory for baseparameter buffer\n");
+		return -ENOMEM;
+	}
+
 	ret = blk_dread(dev_desc, part_info.start, block_num, (void *)baseparameter_buf);
 	if (ret < 0) {
 		printf("read baseparameter failed\n");
-		return ret;
+		goto out;
 	}
 
 	memcpy(&base_parameter, baseparameter_buf, sizeof(base_parameter));
@@ -167,6 +175,8 @@ int rockchip_get_baseparameter(void)
 	}
 	rockchip_display_make_crc32_table();
 
+out:
+	free(baseparameter_buf);
 	return ret;
 }
 
@@ -517,23 +527,6 @@ static int display_get_timing_from_dts(struct rockchip_panel *panel,
 
 	rockchip_ofnode_get_display_mode(timing, mode, bus_flags);
 
-	if (IS_ENABLED(CONFIG_ROCKCHIP_RK3568) || IS_ENABLED(CONFIG_ROCKCHIP_RK3588)) {
-		if (mode->hdisplay % 4) {
-			int old_hdisplay = mode->hdisplay;
-			int align = 4 - (mode->hdisplay % 4);
-
-			mode->hdisplay += align;
-			mode->hsync_start += align;
-			mode->hsync_end += align;
-			mode->htotal += align;
-
-			ofnode_write_u32_array(timing, "hactive", (u32 *)&mode->hdisplay, 1);
-
-			printf("WARN: hactive need to be aligned with 4-pixel, %d -> %d\n",
-				old_hdisplay, mode->hdisplay);
-		}
-	}
-
 	return 0;
 }
 
@@ -780,7 +773,7 @@ static int display_init(struct display_state *state)
 					     conn_state->edid, EDID_SIZE);
 		if (ret > 0) {
 #if defined(CONFIG_I2C_EDID)
-			display_get_edid_mode(state);
+			ret = display_get_edid_mode(state);
 #endif
 		} else {
 			ret = video_bridge_get_timing(conn->bridge->dev);
@@ -821,10 +814,16 @@ static int display_init(struct display_state *state)
 
 	/* rk356x series drive mipi pixdata on posedge */
 	compatible = dev_read_string(conn->dev, "compatible");
-	if (!strcmp(compatible, "rockchip,rk3568-mipi-dsi")) {
+	if (compatible && !strcmp(compatible, "rockchip,rk3568-mipi-dsi")) {
 		conn_state->bus_flags &= ~DRM_BUS_FLAG_PIXDATA_DRIVE_NEGEDGE;
 		conn_state->bus_flags |= DRM_BUS_FLAG_PIXDATA_DRIVE_POSEDGE;
 	}
+
+	if (display_mode_fixup(state))
+		goto deinit;
+
+	if (conn->bridge)
+		rockchip_bridge_mode_set(conn->bridge, &conn_state->mode);
 
 	printf("%s: %s detailed mode clock %u kHz, flags[%x]\n"
 	       "    H: %04d %04d %04d %04d\n"
@@ -838,12 +837,6 @@ static int display_init(struct display_state *state)
 	       mode->vdisplay, mode->vsync_start,
 	       mode->vsync_end, mode->vtotal,
 	       conn_state->bus_format);
-
-	if (display_mode_fixup(state))
-		goto deinit;
-
-	if (conn->bridge)
-		rockchip_bridge_mode_set(conn->bridge, &conn_state->mode);
 
 	if (crtc_funcs->init && state->enabled_at_spl == false) {
 		ret = crtc_funcs->init(state);
@@ -2230,6 +2223,7 @@ static int rockchip_display_probe(struct udevice *dev)
 		s->conn_state.overscan.top_margin = 100;
 		s->conn_state.overscan.bottom_margin = 100;
 		s->crtc_state.node = np_to_ofnode(vop_node);
+		s->crtc_state.port_node = port_node;
 		s->crtc_state.dev = crtc_dev;
 		s->crtc_state.crtc = crtc;
 		s->crtc_state.crtc_id = get_crtc_id(np_to_ofnode(ep_node), is_ports_node);

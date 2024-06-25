@@ -57,6 +57,9 @@
 #define RK3568_GRF_VO_CON1		0X0364
 #define RK3568_RGB_DATA_BYPASS(v)	HIWORD_UPDATE(v, 6, 6)
 
+#define RK3576_VCCIO_IOC_MISC_CON8	0x6420
+#define RK3576_VOP_MCU_SEL(v)		HIWORD_UPDATE(v, 10, 10)
+
 struct rockchip_rgb;
 
 struct rockchip_rgb_funcs {
@@ -179,7 +182,8 @@ static int rockchip_rgb_connector_init(struct rockchip_connector *conn, struct d
 
 	rgb->phy = conn->phy;
 
-	conn_state->color_space = V4L2_COLORSPACE_DEFAULT;
+	conn_state->color_range = DRM_COLOR_YCBCR_FULL_RANGE;
+	conn_state->color_encoding = DRM_COLOR_YCBCR_BT709;
 	conn_state->disp_info  = rockchip_get_disp_info(conn_state->type, rgb->id);
 
 	switch (conn_state->bus_format) {
@@ -189,6 +193,15 @@ static int rockchip_rgb_connector_init(struct rockchip_connector *conn, struct d
 		break;
 	case MEDIA_BUS_FMT_RGB565_1X16:
 		conn_state->output_mode = ROCKCHIP_OUT_MODE_P565;
+		conn_state->output_if = VOP_OUTPUT_IF_RGB;
+		break;
+	case MEDIA_BUS_FMT_RGB565_2X8_LE:
+	case MEDIA_BUS_FMT_BGR565_2X8_LE:
+		conn_state->output_mode = ROCKCHIP_OUT_MODE_S565;
+		conn_state->output_if = VOP_OUTPUT_IF_RGB;
+		break;
+	case MEDIA_BUS_FMT_RGB666_3X6:
+		conn_state->output_mode = ROCKCHIP_OUT_MODE_S666;
 		conn_state->output_if = VOP_OUTPUT_IF_RGB;
 		break;
 	case MEDIA_BUS_FMT_RGB888_3X8:
@@ -207,6 +220,8 @@ static int rockchip_rgb_connector_init(struct rockchip_connector *conn, struct d
 	case MEDIA_BUS_FMT_VYUY8_2X8:
 		conn_state->output_mode = ROCKCHIP_OUT_MODE_BT656;
 		conn_state->output_if = VOP_OUTPUT_IF_BT656;
+		conn_state->color_range = DRM_COLOR_YCBCR_LIMITED_RANGE;
+		conn_state->color_encoding = DRM_COLOR_YCBCR_BT601;
 		break;
 	case MEDIA_BUS_FMT_YUYV8_1X16:
 	case MEDIA_BUS_FMT_YVYU8_1X16:
@@ -214,6 +229,7 @@ static int rockchip_rgb_connector_init(struct rockchip_connector *conn, struct d
 	case MEDIA_BUS_FMT_VYUY8_1X16:
 		conn_state->output_mode = ROCKCHIP_OUT_MODE_BT1120;
 		conn_state->output_if = VOP_OUTPUT_IF_BT1120;
+		conn_state->color_range = DRM_COLOR_YCBCR_LIMITED_RANGE;
 		break;
 	case MEDIA_BUS_FMT_RGB888_1X24:
 	case MEDIA_BUS_FMT_RGB666_1X24_CPADHI:
@@ -625,6 +641,16 @@ static const struct rockchip_rgb_funcs rk3568_rgb_funcs = {
 	.prepare = rk3568_rgb_prepare,
 };
 
+static void rk3576_rgb_prepare(struct rockchip_rgb *rgb, int pipe)
+{
+	regmap_write(rgb->grf, RK3576_VCCIO_IOC_MISC_CON8,
+		     RK3576_VOP_MCU_SEL(rgb->data_sync_bypass));
+}
+
+static const struct rockchip_rgb_funcs rk3576_rgb_funcs = {
+	.prepare = rk3576_rgb_prepare,
+};
+
 static const struct udevice_id rockchip_rgb_ids[] = {
 	{
 		.compatible = "rockchip,px30-rgb",
@@ -658,6 +684,10 @@ static const struct udevice_id rockchip_rgb_ids[] = {
 	{
 		.compatible = "rockchip,rk3568-rgb",
 		.data = (ulong)&rk3568_rgb_funcs,
+	},
+	{
+		.compatible = "rockchip,rk3576-rgb",
+		.data = (ulong)&rk3576_rgb_funcs,
 	},
 	{
 		.compatible = "rockchip,rk3588-rgb",

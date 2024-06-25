@@ -309,9 +309,15 @@ static int analogix_dp_process_clock_recovery(struct analogix_dp_device *dp)
 					pre_emphasis)
 				dp->link_train.cr_loop[lane]++;
 
+			/*
+			 * In DP spec 1.3, Condition of CR fail are
+			 * outlined in section 3.5.1.2.2.1, figure 3-20:
+			 *
+			 * 1. Maximum Voltage Swing reached
+			 * 2. Same Voltage five times
+			 */
 			if (dp->link_train.cr_loop[lane] == MAX_CR_LOOP ||
-			    voltage_swing == VOLTAGE_LEVEL_3 ||
-			    pre_emphasis == PRE_EMPHASIS_LEVEL_3) {
+			    DPCD_VOLTAGE_SWING_GET(training_lane) == VOLTAGE_LEVEL_3) {
 				dev_err(dp->dev, "CR Max reached (%d,%d,%d)\n",
 					dp->link_train.cr_loop[lane],
 					voltage_swing, pre_emphasis);
@@ -752,7 +758,8 @@ static int analogix_dp_connector_init(struct rockchip_connector *conn, struct di
 
 	conn_state->output_if |= dp->id ? VOP_OUTPUT_IF_eDP1 : VOP_OUTPUT_IF_eDP0;
 	conn_state->output_mode = ROCKCHIP_OUT_MODE_AAAA;
-	conn_state->color_space = V4L2_COLORSPACE_DEFAULT;
+	conn_state->color_encoding = DRM_COLOR_YCBCR_BT709;
+	conn_state->color_range = DRM_COLOR_YCBCR_FULL_RANGE;
 
 	reset_assert_bulk(&dp->resets);
 	udelay(1);
@@ -1125,6 +1132,14 @@ static const struct rockchip_dp_chip_data rk3568_edp_platform_data = {
 	.max_lane_count = 4,
 };
 
+static const struct rockchip_dp_chip_data rk3576_edp_platform_data = {
+	.chip_type = RK3576_EDP,
+	.ssc = true,
+
+	.max_link_rate = DP_LINK_BW_5_4,
+	.max_lane_count = 4,
+};
+
 static const struct rockchip_dp_chip_data rk3588_edp_platform_data = {
 	.chip_type = RK3588_EDP,
 	.ssc = true,
@@ -1146,6 +1161,9 @@ static const struct udevice_id analogix_dp_ids[] = {
 	}, {
 		.compatible = "rockchip,rk3568-edp",
 		.data = (ulong)&rk3568_edp_platform_data,
+	}, {
+		.compatible = "rockchip,rk3576-edp",
+		.data = (ulong)&rk3576_edp_platform_data,
 	}, {
 		.compatible = "rockchip,rk3588-edp",
 		.data = (ulong)&rk3588_edp_platform_data,
