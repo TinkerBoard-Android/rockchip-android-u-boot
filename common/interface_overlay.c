@@ -595,8 +595,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart9 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2c1=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
