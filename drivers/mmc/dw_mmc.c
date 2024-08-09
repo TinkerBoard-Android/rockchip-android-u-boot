@@ -180,7 +180,7 @@ static unsigned int dwmci_get_drto(struct dwmci_host *host,
 				   host->mmc->clock);
 
 	/* add a bit spare time */
-	drto_ms += 10;
+	drto_ms += 50;
 
 	return drto_ms;
 }
@@ -818,7 +818,7 @@ static int dwmci_init(struct mmc *mmc)
 	if (host->dev_index == 0)
 		dwmci_writel(host, DWMCI_PWREN, 1);
 	else if (host->dev_index == 1)
-		dwmci_writel(host, DWMCI_PWREN, 0);
+		dwmci_writel(host, DWMCI_PWREN, CONFIG_MMC_DW_PWREN_VALUE);
 	else
 		dwmci_writel(host, DWMCI_PWREN, 1);
 #else

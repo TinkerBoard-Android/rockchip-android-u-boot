@@ -147,7 +147,7 @@ static int rockchip_mmc_get_phase(struct dwmci_host *host, bool sample)
 {
 	struct udevice *dev = host->priv;
 	struct rockchip_dwmmc_priv *priv = dev_get_priv(dev);
-	unsigned long rate = clk_get_rate(&priv->clk);
+	unsigned long rate = clk_get_rate(&priv->clk) / 2;
 	u32 raw_value;
 	u16 degrees;
 	u32 delay_num = 0;
@@ -177,7 +177,7 @@ static int rockchip_mmc_set_phase(struct dwmci_host *host, bool sample, int degr
 {
 	struct udevice *dev = host->priv;
 	struct rockchip_dwmmc_priv *priv = dev_get_priv(dev);
-	unsigned long rate = clk_get_rate(&priv->clk);
+	unsigned long rate = clk_get_rate(&priv->clk) / 2;
 	u8 nineties, remainder;
 	u8 delay_num;
 	u32 raw_value;
@@ -270,7 +270,7 @@ static int rockchip_dwmmc_execute_tuning(struct dwmci_host *host, u32 opcode)
 	int middle_phase, real_middle_phase;
 	ulong ts;
 
-	if (IS_ERR(&priv->sample_clk))
+	if (!(priv->sample_clk.dev))
 		return -EIO;
 	ts = get_timer(0);
 
@@ -367,6 +367,7 @@ static int rockchip_dwmmc_execute_tuning(struct dwmci_host *host, u32 opcode)
 }
 #else
 static int rockchip_dwmmc_execute_tuning(struct dwmci_host *host, u32 opcode) { return 0; }
+static int rockchip_mmc_set_phase(struct dwmci_host *host, bool sample, int degrees) { return 0; }
 #endif
 
 static int rockchip_dwmmc_probe(struct udevice *dev)
@@ -441,13 +442,16 @@ internal_phase:
 		plat->cfg.host_caps |= MMC_MODE_HS200;
 	plat->mmc.default_phase =
 		dev_read_u32_default(dev, "default-sample-phase", 0);
-#ifdef CONFIG_ROCKCHIP_RV1106
-	if (!(ret < 0) && (&priv->sample_clk)) {
-		ret = clk_set_phase(&priv->sample_clk, plat->mmc.default_phase);
+
+	/* Set default sample phase for initializate */
+	if (!(ret < 0)) {
+		if (priv->usrid == USRID_INTER_PHASE)
+			ret = rockchip_mmc_set_phase(host, true, plat->mmc.default_phase);
+		else if ((!priv->sample_clk.dev))
+			ret = clk_set_phase(&priv->sample_clk, plat->mmc.default_phase);
 		if (ret < 0)
 			debug("MMC: can not set default phase!\n");
 	}
-#endif
 
 	plat->mmc.init_retry = 0;
 	host->mmc = &plat->mmc;

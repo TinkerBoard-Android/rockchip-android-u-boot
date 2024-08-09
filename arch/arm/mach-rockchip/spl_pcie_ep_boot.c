@@ -384,6 +384,8 @@ static void pcie_board_init(void)
 #define PHY_MODE_PCIE_NABINB	2	/* P1:PCIe3x1*2 + P0:PCIe3x2 */
 #define PHY_MODE_PCIE_NABIBI	3	/* P1:PCIe3x1*2 + P0:PCIe3x1*2 */
 
+#define PHY_MODE_PCIE			PHY_MODE_PCIE_AGGREGATION
+
 #define CRU_BASE_ADDR			0xfd7c0000
 #define CRU_SOFTRST_CON32		(CRU_BASE_ADDR + 0x0a80)
 #define CRU_SOFTRST_CON33		(CRU_BASE_ADDR + 0x0a84)
@@ -405,7 +407,7 @@ static void pcie_board_init(void)
 #define PCIE3PHY_GRF_PHY1_LN0_CON1	(PCIE3PHY_GRF_BASE + 0x2004)
 #define PCIE3PHY_GRF_PHY1_LN1_CON1	(PCIE3PHY_GRF_BASE + 0x2104)
 #define FIREWALL_PCIE_MASTER_SEC	0xfe0300f0
-#define FIREWALL_PCIE_ACCESS		0xfe586040
+#define FIREWALL_PCIE_ACCESS		0xfd586040
 #define CRU_PHYREF_ALT_GATE_CON		(CRU_BASE_ADDR + 0x0c38)
 #define PMU1_GRF_BASE			0xfd58a000
 #define PMU_PWR_GATE_SFTCON1		0xfd8d8150
@@ -438,7 +440,7 @@ static void pcie_cru_init(void)
 
 	/* FixMe init 3.0 PHY */
 	/* Phy mode: Aggregation NBNB */
-	writel((0x7 << 16) | PHY_MODE_PCIE_AGGREGATION, RK3588_PCIE3PHY_GRF_CMN_CON0);
+	writel((0x7 << 16) | PHY_MODE_PCIE, RK3588_PCIE3PHY_GRF_CMN_CON0);
 	printep("PHY Mode 0x%x\n", readl(RK3588_PCIE3PHY_GRF_CMN_CON0) & 7);
 	/* Enable clock and sfreset for Controller and PHY */
 	writel(0xffff0000, CRU_SOFTRST_CON32);
@@ -493,7 +495,8 @@ static void pcie_cru_init(void)
 
 			t0 = phy0_mplla;
 			t1 = phy1_mplla;
-			if (phy0_mplla == 0xF && phy1_mplla == 0xF)
+			if (((PHY_MODE_PCIE == PHY_MODE_PCIE_AGGREGATION) && (phy0_mplla == 0xF && phy1_mplla == 0xF)) ||
+			    ((PHY_MODE_PCIE != PHY_MODE_PCIE_AGGREGATION) && (phy0_mplla == 0xF)))
 				break;
 		}
 
@@ -513,7 +516,7 @@ static void pcie_firewall_init(void)
 {
 	/* Enable PCIe Access in firewall and master secure mode */
 	writel(0xffff0000, FIREWALL_PCIE_MASTER_SEC);
-	writel(0x01800000, FIREWALL_PCIE_ACCESS);
+	writel(0x03000000, FIREWALL_PCIE_ACCESS);
 }
 #elif CONFIG_ROCKCHIP_RK3568
 
@@ -721,6 +724,7 @@ reinit:
 	pcie_devmode_update(RKEP_MODE_LOADER, RKEP_SMODE_LNKRDY);
 
 	/* Waiting for Link up */
+	phy_linkup = 0;
 	while (1) {
 		val = readl(apb_base + 0x300);
 		if (((val & 0x3ffff) & ((0x3 << 16))) == 0x30000)

@@ -15,13 +15,16 @@
 #include <asm/arch/bootrom.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/hardware.h>
+#include <asm/arch/boot_mode.h>
 #include <asm/arch/ioc_rk3576.h>
+#include <asm/arch/rockchip_smccc.h>
 #include <asm/system.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
 #define SYS_GRF_BASE		0x2600A000
 #define SYS_GRF_SOC_CON2	0x0008
+#define SYS_GRF_SOC_CON7	0x001c
 #define SYS_GRF_SOC_CON11	0x002c
 #define SYS_GRF_SOC_CON12	0x0030
 
@@ -70,6 +73,8 @@ DECLARE_GLOBAL_DATA_PTR;
 #define USBGRF_BASE		0x2601e000
 #define USB_GRF_USB3OTG0_CON1	0x0030
 
+#define PMU1_GRF_BASE		0x26026000
+#define OS_REG0			0x200
 #define USB2PHY0_GRF_BASE	0x2602e000
 #define USB2PHY1_GRF_BASE	0x26030000
 #define USB2PHY_GRF_CON4	0x0010
@@ -162,6 +167,22 @@ void rockchip_stimer_init(void)
 }
 #endif
 
+void reset_misc(void)
+{
+#ifdef CONFIG_SPL_BUILD
+	/* For RK3576 SPL, should extraly write os_reg0 and reset to maskrom. */
+	if (readl(CONFIG_ROCKCHIP_BOOT_MODE_REG) == BOOT_BROM_DOWNLOAD)
+		writel(BOOT_BROM_DOWNLOAD, PMU1_GRF_BASE + OS_REG0);
+#elif CONFIG_SUPPORT_USBPLUG
+	/*
+	 * For RK3576 USBPLUG, should clear maskrom flag both in os_reg0 and os_reg16.
+	 * It already clear os_reg16 under ./drivers/usb/gadget/f_rockusb.c
+	 */
+	if (readl(CONFIG_ROCKCHIP_BOOT_MODE_REG) != BOOT_BROM_DOWNLOAD)
+		writel(0, (void *)PMU1_GRF_BASE + OS_REG0);
+#endif
+}
+
 void board_set_iomux(enum if_type if_type, int devnum, int routing)
 {
 	switch (if_type) {
@@ -226,31 +247,44 @@ void board_unset_iomux(enum if_type if_type, int devnum, int routing)
 	}
 }
 
+/* @brief: release reset for MCU
+ * @param id: id of MCU, like: bus_mcu, pmu_mcu
+ * @param entry_point: entry of firmware, use for address map
+ * */
 int fit_standalone_release(char *id, uintptr_t entry_point)
 {
-	/*
-	 * bus m0 configuration:
-	 * open bus m0 rtc / core / biu / root
-	 */
-	writel(0x5c000000, TOP_CRU_BASE + TOP_CRU_GATE_CON19);
+	if (!strcmp(id, "bus_mcu")) {
+		/* address map: map 0 to entry_point */
+		sip_smc_mcu_config(ROCKCHIP_SIP_CONFIG_BUSMCU_0_ID,
+			ROCKCHIP_SIP_CONFIG_MCU_CODE_START_ADDR,
+			0xffff0000 | (entry_point >> 16));
 
-	/* select bus m0 jtag GPIO2A2 GPIO2A3 */
-	/* writel(0x001f0010, 0x2600a01c); */
-	/* writel(0xff009900, 0x26044040); */
+		/*
+		* bus m0 configuration:
+		* open bus m0 rtc / core / biu / root
+		*/
+		writel(0x5c000000, TOP_CRU_BASE + TOP_CRU_GATE_CON19);
 
-	/* release bus m0 jtag / core / biu */
-	writel(0x38000000, TOP_CRU_BASE + TOP_CRU_SOFTRST_CON19);
+		/* select bus m0 jtag GPIO2A2 GPIO2A3 */
+		//writel(0x003f0010, SYS_GRF_BASE + SYS_GRF_SOC_CON7);
+		//writel(0xff009900, TOP_IOC_BASE + GPIO2A_IOMUX_SEL_L);
 
-	/* pmu m0 configuration: */
-	/* open pmu m0 rtc / core / biu / root */
-	/* writel(0x59020000, PMU1_CRU_BASE + PMU1_CRU_GATE_CON03); */
+		/* release bus m0 jtag / core / biu */
+		writel(0x38000000, TOP_CRU_BASE + TOP_CRU_SOFTRST_CON19);
+	}
+	else if (!strcmp(id, "pmu_mcu")) {
 
-	/* select pmu m0 jtag */
-	/* writel(0x001f0008, 0x2600a01c); */
-	/* writel(0xff009900, 0x26044040); */
+		/* pmu m0 configuration: */
+		/* open pmu m0 rtc / core / biu / root */
+		/* writel(0x59020000, PMU1_CRU_BASE + PMU1_CRU_GATE_CON03); */
 
-	/* release pmu m0 jtag / core / biu */
-	/* writel(0x38000000, PMU1_CRU_BASE + PMU1_CRU_SOFTRST_CON03); */
+		/* select pmu m0 jtag */
+		/* writel(0x003f0008, SYS_GRF_BASE + SYS_GRF_SOC_CON7); */
+		/* writel(0xff009900, TOP_IOC_BASE + GPIO2A_IOMUX_SEL_L); */
+
+		/* release pmu m0 jtag / core / biu */
+		/* writel(0x38000000, PMU1_CRU_BASE + PMU1_CRU_SOFTRST_CON03); */
+	}
 
 	return 0;
 }
@@ -307,9 +341,6 @@ int arch_cpu_init(void)
 	 */
 	writel(0x20000000, SYS_SGRF_BASE + SYS_SGRF_SOC_CON14);
 	writel(0x48200000, SYS_SGRF_BASE + SYS_SGRF_SOC_CON15);
-
-	/* TODO: bus mcu code addr need bl31 support */
-	writel(0x48200000, 0x26004060);
 
 	/*
 	 * pmu mcu_cache_peripheral_addr

@@ -1949,12 +1949,11 @@ static struct rockchip_connector *rockchip_get_split_connector(struct rockchip_c
 	struct device_node *split_node;
 	struct udevice *split_dev;
 	struct rockchip_connector *split_conn;
-	bool split_mode;
 	int ret;
 
-	split_mode = ofnode_read_bool(conn->dev->node, "split-mode");
-	split_mode |= ofnode_read_bool(conn->dev->node, "dual-channel");
-	if (!split_mode)
+	conn->split_mode = ofnode_read_bool(conn->dev->node, "split-mode");
+	conn->dual_channel_mode = ofnode_read_bool(conn->dev->node, "dual-channel");
+	if (!conn->split_mode && !conn->dual_channel_mode)
 		return NULL;
 
 	switch (conn->type) {
@@ -1990,6 +1989,8 @@ static struct rockchip_connector *rockchip_get_split_connector(struct rockchip_c
 		debug("Warn: no find panel or bridge\n");
 
 	split_conn->phy = rockchip_of_find_phy(split_dev);
+	split_conn->split_mode = conn->split_mode;
+	split_conn->dual_channel_mode = conn->dual_channel_mode;
 
 	return split_conn;
 }
@@ -2382,12 +2383,6 @@ void rockchip_display_fixup(void *blob)
 		if (!conn_funcs) {
 			printf("failed to get exist connector\n");
 			continue;
-		}
-
-		if (s->conn_state.secondary &&
-		    s->conn_state.secondary->type != DRM_MODE_CONNECTOR_LVDS) {
-			s->conn_state.mode.clock *= 2;
-			s->conn_state.mode.hdisplay *= 2;
 		}
 
 		crtc = s->crtc_state.crtc;

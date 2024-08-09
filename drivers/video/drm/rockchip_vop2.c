@@ -47,6 +47,7 @@
 #define RK3568_AUTO_GATING_CTRL			0x008
 #define AUTO_GATING_EN_SHIFT			31
 #define PORT_DCLK_AUTO_GATING_EN_SHIFT		14
+#define ACLK_PRE_AUTO_GATING_EN_SHIFT		7
 
 #define RK3576_SYS_AXI_HURRY_CTRL0_IMD		0x014
 #define AXI0_PORT_URGENCY_EN_SHIFT		24
@@ -121,6 +122,8 @@
 #define RK3568_DSP_IF_POL			0x030
 #define IF_CTRL_REG_DONE_IMD_SHIFT		28
 #define IF_CRTL_MIPI_DCLK_POL_SHIT		19
+#define IF_CTRL_MIPI_PIN_POL_MASK		0x7
+#define IF_CTRL_MIPI_PIN_POL_SHIFT		16
 #define IF_CRTL_EDP_DCLK_POL_SHIT		15
 #define IF_CTRL_EDP_PIN_POL_MASK		0x7
 #define IF_CTRL_EDP_PIN_POL_SHIFT		12
@@ -2827,6 +2830,22 @@ static void vop2_global_initial(struct vop2 *vop2, struct display_state *state)
 
 		vop2_mask_write(vop2, RK3568_SYS_AXI_LUT_CTRL, EN_MASK,
 				DSP_VS_T_SEL_SHIFT, 0, false);
+
+		/*
+		 * This is a workaround for RK3528/RK3562/RK3576:
+		 *
+		 * The aclk pre auto gating function may disable the aclk
+		 * in some unexpected cases, which detected by hardware
+		 * automatically.
+		 *
+		 * For example, if the above function is enabled, the post
+		 * scale function will be affected, resulting in abnormal
+		 * display.
+		 */
+		if (vop2->version == VOP_VERSION_RK3528 || vop2->version == VOP_VERSION_RK3562 ||
+		    vop2->version == VOP_VERSION_RK3576)
+			vop2_mask_write(vop2, RK3568_AUTO_GATING_CTRL, EN_MASK,
+					ACLK_PRE_AUTO_GATING_EN_SHIFT, 0, false);
 	}
 
 	if (vop2->version == VOP_VERSION_RK3568)
@@ -3876,6 +3895,8 @@ static unsigned long rk3568_vop2_if_cfg(struct display_state *state)
 				MIPI0_MUX_SHIFT, cstate->crtc_id, false);
 		vop2_mask_write(vop2, RK3568_DSP_IF_POL, EN_MASK,
 				IF_CRTL_MIPI_DCLK_POL_SHIT, dclk_inv, false);
+		vop2_mask_write(vop2, RK3568_DSP_IF_POL, IF_CTRL_MIPI_PIN_POL_MASK,
+				IF_CTRL_MIPI_PIN_POL_SHIFT, val, false);
 	}
 
 	if (conn_state->output_if & VOP_OUTPUT_IF_MIPI1) {
@@ -3885,6 +3906,8 @@ static unsigned long rk3568_vop2_if_cfg(struct display_state *state)
 				MIPI1_MUX_SHIFT, cstate->crtc_id, false);
 		vop2_mask_write(vop2, RK3568_DSP_IF_POL, EN_MASK,
 				IF_CRTL_MIPI_DCLK_POL_SHIT, dclk_inv, false);
+		vop2_mask_write(vop2, RK3568_DSP_IF_POL, IF_CTRL_MIPI_PIN_POL_MASK,
+				IF_CTRL_MIPI_PIN_POL_SHIFT, val, false);
 	}
 
 	if (conn_state->output_flags &
@@ -3926,6 +3949,7 @@ static unsigned long rk3562_vop2_if_cfg(struct display_state *state)
 	struct drm_display_mode *mode = &conn_state->mode;
 	struct vop2 *vop2 = cstate->private;
 	bool dclk_inv;
+	u32 vp_offset = (cstate->crtc_id * 0x100);
 	u32 val;
 
 	dclk_inv = (conn_state->bus_flags & DRM_BUS_FLAG_PIXDATA_DRIVE_NEGEDGE) ? 1 : 0;
@@ -3963,6 +3987,13 @@ static unsigned long rk3562_vop2_if_cfg(struct display_state *state)
 				RK3562_MIPI_DCLK_POL_SHIFT, dclk_inv, false);
 		vop2_mask_write(vop2, RK3568_DSP_IF_POL, RK3562_IF_PIN_POL_MASK,
 				RK3562_MIPI_PIN_POL_SHIFT, val, false);
+
+		if (conn_state->hold_mode) {
+			vop2_mask_write(vop2, RK3568_VP0_MIPI_CTRL + vp_offset,
+					EN_MASK, EDPI_TE_EN, !cstate->soft_te, false);
+			vop2_mask_write(vop2, RK3568_VP0_MIPI_CTRL + vp_offset,
+					EN_MASK, EDPI_WMS_HOLD_EN, 1, false);
+		}
 	}
 
 	return mode->crtc_clock;
@@ -5586,9 +5617,17 @@ static int rockchip_vop2_mode_valid(struct display_state *state)
 static int rockchip_vop2_mode_fixup(struct display_state *state)
 {
 	struct connector_state *conn_state = &state->conn_state;
+	struct rockchip_connector *conn = conn_state->connector;
 	struct drm_display_mode *mode = &conn_state->mode;
 	struct crtc_state *cstate = &state->crtc_state;
 	struct vop2 *vop2 = cstate->private;
+
+	if (conn_state->secondary) {
+		if (!(conn->dual_channel_mode &&
+		      conn_state->secondary->type == DRM_MODE_CONNECTOR_eDP) &&
+		    conn_state->secondary->type != DRM_MODE_CONNECTOR_LVDS)
+			drm_mode_convert_to_split_mode(mode);
+	}
 
 	drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V | CRTC_STEREO_DOUBLE);
 
@@ -5636,15 +5675,6 @@ static int rockchip_vop2_mode_fixup(struct display_state *state)
 	mode->crtc_clock *= rockchip_drm_get_cycles_per_pixel(conn_state->bus_format);
 	if (cstate->mcu_timing.mcu_pix_total)
 		mode->crtc_clock *= cstate->mcu_timing.mcu_pix_total + 1;
-
-	if (conn_state->secondary &&
-	    conn_state->secondary->type != DRM_MODE_CONNECTOR_LVDS) {
-		mode->crtc_clock *= 2;
-		mode->crtc_hdisplay *= 2;
-		mode->crtc_hsync_start *= 2;
-		mode->crtc_hsync_end *= 2;
-		mode->crtc_htotal *= 2;
-	}
 
 	return 0;
 }
