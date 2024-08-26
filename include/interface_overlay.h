@@ -25,10 +25,14 @@ struct hw_config
 	int gmac;
 #endif
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 	int uart4, uart9;
 	int i2c5, i2s3_2ch, spi3, spdif_8ch;
 	int pwm12, pwm13, pwm14, pwm15;
+#endif
+
+#ifdef CONFIG_RK3566_TB3_RV
+	int pwm1, pwm5;
 #endif
 	int auto_ums;
 
@@ -36,7 +40,7 @@ struct hw_config
 	char **overlay_file;
 };
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 void set_lan_status(struct fdt_header *);
 #endif
 

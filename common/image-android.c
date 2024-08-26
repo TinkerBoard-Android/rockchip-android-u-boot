@@ -625,7 +625,7 @@ static int android_image_separate(struct andr_img_hdr *hdr,
 		printf("conf.gmac = %d\n", hw_conf.gmac);
 #endif
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 		printf("intf.uart4 = %d\n", hw_conf.uart4);
 		printf("intf.i2c5 = %d\n", hw_conf.i2c5);
 		printf("intf.uart9 = %d\n", hw_conf.uart9);
@@ -636,6 +636,11 @@ static int android_image_separate(struct andr_img_hdr *hdr,
 		printf("intf.spdif_8ch = %d\n", hw_conf.spdif_8ch);
 		printf("intf.spi3 = %d\n", hw_conf.spi3);
 		printf("intf.i2s3_2ch = %d\n", hw_conf.i2s3_2ch);
+#endif
+
+#ifdef CONFIG_RK3566_TB3_RV
+		printf("intf.pwm1 = %d\n", hw_conf.pwm1);
+		printf("intf.pwm5 = %d\n", hw_conf.pwm5);
 #endif
 		printf("conf.auto_ums = %d\n", hw_conf.auto_ums);
 
@@ -724,7 +729,7 @@ static int android_image_separate(struct andr_img_hdr *hdr,
 		if(hw_conf.valid)
 			handle_hw_conf(NULL, working_fdt, &hw_conf);
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 		set_lan_status(working_fdt);
 #endif
 	}

@@ -5,7 +5,7 @@
 
 #define MAX_OVERLAY_NAME_LENGTH	128
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 #include <adc.h>
 #define SARADC_DETECT_NUM	2
 static int adc4_odmid = -1, adc5_prjid = -1;
@@ -22,7 +22,7 @@ static void verify_devinfo(void)
 		file_addr = env_get("temp_file_addr");
 		fdt_addr_r = env_get_ulong("fdt_addr_r", 16, 0);
 	}
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 	if (adc4_odmid == -1 || adc5_prjid == -1) {
 		unsigned int in_voltage_raw[SARADC_DETECT_NUM];
 		float voltage_scale = 1.8066, voltage_raw[SARADC_DETECT_NUM], vresult[SARADC_DETECT_NUM];
@@ -448,7 +448,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 			goto invalid_line;
 #endif
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 	if(memcmp(text, "uart4=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -576,6 +576,29 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 			hw_conf->spi3 = -1;
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2s3_2ch = -1;
+			i = i + 3;
+		} else
+			goto invalid_line;
+#endif
+
+#ifdef CONFIG_RK3566_TB3_RV
+	} else if(memcmp(text, "pwm1=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm1 = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm1 = -1;
+			i = i + 3;
+		} else
+			goto invalid_line;
+	} else if(memcmp(text, "pwm5=", 5) == 0) {
+		i = 5;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->pwm5 = 1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->pwm5 = -1;
 			i = i + 3;
 		} else
 			goto invalid_line;
@@ -1197,7 +1220,7 @@ void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, struct hw_
 		set_hw_property(working_fdt, "/ethernet@fe300000", "wakeup-enable", "0", 2);
 #endif
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 	if (hw_conf->uart4 == 1)
 		set_hw_property(working_fdt, "/serial@fe680000", "status", "okay", 5);
 	else if (hw_conf->uart4 == -1)
@@ -1248,9 +1271,21 @@ void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, struct hw_
 	else if (hw_conf->i2s3_2ch == -1)
 		set_hw_property(working_fdt, "/i2s@fe430000", "status", "disabled", 9);
 #endif
+
+#ifdef CONFIG_RK3566_TB3_RV
+	if (hw_conf->pwm1 == 1)
+		set_hw_property(working_fdt, "/pwm@fdd70010", "status", "okay", 5);
+	else if (hw_conf->pwm1 == -1)
+		set_hw_property(working_fdt, "/pwm@fdd70010", "status", "disabled", 9);
+
+	if (hw_conf->pwm5 == 1)
+		set_hw_property(working_fdt, "/pwm@fe6e0010", "status", "okay", 5);
+	else if (hw_conf->pwm5 == -1)
+		set_hw_property(working_fdt, "/pwm@fe6e0010", "status", "disabled", 9);
+#endif
 }
 
-#ifdef CONFIG_ROCKCHIP_RK3568
+#ifdef CONFIG_RK3568_TB3N
 void set_lan_status(struct fdt_header *working_fdt)
 {
 	verify_devinfo();

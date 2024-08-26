@@ -21,6 +21,12 @@ config POSITION_INDEPENDENT
 	  relocating itself to the top-of-RAM later during execution.
 endif
 
+config RK3566_TB3_RV
+	bool "Support Tinker Board 3 RV"
+
+config RK3566_TB3
+	bool "Support Tinker Board 3"
+
 config RK3568_TB3N
 	bool "Support Tinker Board 3N"
 
