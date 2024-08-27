@@ -202,8 +202,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->fiq_debugger = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2c1=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -212,8 +211,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c1 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2c4=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -222,8 +220,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c4 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "spi0=", 5) == 0) {
 		i = 5;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -233,8 +230,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi0 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "spi2=", 5) == 0) {
 		i = 5;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -243,8 +239,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi2 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "pwm2=", 5) == 0) {
 		i = 5;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -254,8 +249,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm2 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "pwm3=", 5) == 0) {
 		i = 5;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -265,8 +259,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm3 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "uart1=", 6) == 0) {
 		i = 6;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -275,8 +268,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart1 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
         } else if (memcmp(text, "uart2=", 6) == 0) {
 		i = 6;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -287,9 +279,8 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart2 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
-        } else if (memcmp(text, "uart3=", 6) == 0) {
+		}
+	} else if (memcmp(text, "uart3=", 6) == 0) {
 		i = 6;
 		if (memcmp(text + i, "on", 2) == 0) {
 			if (hw_conf->fiq_debugger != 1)
@@ -298,8 +289,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart3 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "uart4=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -309,8 +299,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart4 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if (memcmp(text, "pcm_i2s=", 8) == 0) {
 		i = 8;
 		if (memcmp(text + i, "on", 2) == 0) {
@@ -319,8 +308,8 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if (memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pcm_i2s = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
+	}
 #endif
 
 #ifdef CONFIG_ROCKCHIP_RK3399
@@ -332,8 +321,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c6 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2c7=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -342,8 +330,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c7 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "uart0=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -352,8 +339,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart0 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "uart4=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -363,8 +349,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart4 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2s0=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -373,8 +358,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2s0 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spi1=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -384,8 +368,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi1 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spi5=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -394,8 +377,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi5 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm0=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -404,8 +386,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm0 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm1=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -414,8 +395,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm1 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm3a=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -424,8 +404,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm3a = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spdif=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -434,8 +413,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spdif = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "test_clkout2=", 13) == 0) {
 		i = 13;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -444,8 +422,8 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->test_clkout2 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
+	}
 #endif
 
 #ifdef CONFIG_RK3568_TB3N
@@ -457,8 +435,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart4 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2c5=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -467,8 +444,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2c5 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "uart9=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -481,8 +457,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->uart9 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm12=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -494,8 +469,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm12 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm13=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -507,8 +481,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm13 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm14=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -519,8 +492,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm14 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm15=", 6) == 0) {
 		i = 6;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -531,8 +503,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm15 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spdif_8ch=", 10) == 0) {
 		i = 10;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -543,8 +514,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spdif_8ch = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "spi3=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -560,8 +530,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->spi3 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "i2s3_2ch=", 9) == 0) {
 		i = 9;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -577,12 +546,12 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->i2s3_2ch = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
+	}
 #endif
 
 #ifdef CONFIG_RK3566_TB3_RV
-	} else if(memcmp(text, "pwm1=", 5) == 0) {
+	if(memcmp(text, "pwm1=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
 			hw_conf->pwm1 = 1;
@@ -590,8 +559,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm1 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
+		}
 	} else if(memcmp(text, "pwm5=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -600,22 +568,10 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm5 = -1;
 			i = i + 3;
-		} else
-			goto invalid_line;
-#endif
-	} else
-		goto invalid_line;
-
-	while(*(text + i) != 0x00)
-	{
-		if(*(text + (i++)) == 0x0a)
-			break;
+		}
 	}
-	return i;
+#endif
 
-invalid_line:
-	//It's not a legal line, skip it.
-	//printf("get_value: illegal line\n");
 	while(*(text + i) != 0x00)
 	{
 		if(*(text + (i++)) == 0x0a)
