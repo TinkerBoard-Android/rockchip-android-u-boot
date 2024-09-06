@@ -31,7 +31,7 @@ struct hw_config
 	int pwm12, pwm13, pwm14, pwm15;
 #endif
 
-#ifdef CONFIG_RK3566_TB3_RV
+#ifdef CONFIG_RK3566_RVMON7
 	int pwm1, pwm5;
 #endif
 	int auto_ums;

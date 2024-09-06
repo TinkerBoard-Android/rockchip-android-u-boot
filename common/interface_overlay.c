@@ -550,7 +550,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 	}
 #endif
 
-#ifdef CONFIG_RK3566_TB3_RV
+#ifdef CONFIG_RK3566_RVMON7
 	if(memcmp(text, "pwm1=", 5) == 0) {
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
@@ -1228,7 +1228,7 @@ void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, struct hw_
 		set_hw_property(working_fdt, "/i2s@fe430000", "status", "disabled", 9);
 #endif
 
-#ifdef CONFIG_RK3566_TB3_RV
+#ifdef CONFIG_RK3566_RVMON7
 	if (hw_conf->pwm1 == 1)
 		set_hw_property(working_fdt, "/pwm@fdd70010", "status", "okay", 5);
 	else if (hw_conf->pwm1 == -1)

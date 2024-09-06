@@ -638,7 +638,7 @@ static int android_image_separate(struct andr_img_hdr *hdr,
 		printf("intf.i2s3_2ch = %d\n", hw_conf.i2s3_2ch);
 #endif
 
-#ifdef CONFIG_RK3566_TB3_RV
+#ifdef CONFIG_RK3566_RVMON7
 		printf("intf.pwm1 = %d\n", hw_conf.pwm1);
 		printf("intf.pwm5 = %d\n", hw_conf.pwm5);
 #endif
