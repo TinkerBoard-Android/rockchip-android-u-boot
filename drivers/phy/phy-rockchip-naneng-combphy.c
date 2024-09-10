@@ -9,6 +9,7 @@
 #include <clk.h>
 #include <dm.h>
 #include <dm/lists.h>
+#include <dm/uclass-internal.h>
 #include <dt-bindings/phy/phy.h>
 #include <generic-phy.h>
 #include <syscon.h>
@@ -183,20 +184,33 @@ static int rockchip_combphy_sgmii_init(struct rockchip_combphy_priv *priv)
 	return ret;
 }
 
-int rockchip_combphy_usb3_uboot_init(void)
+int rockchip_combphy_usb3_uboot_init(fdt_addr_t phy_addr)
 {
-	struct udevice *udev;
+	struct udevice *udev = NULL;
+	struct udevice *dev;
+	struct uclass *uc;
 	struct rockchip_combphy_priv *priv;
 	const struct rockchip_combphy_grfcfg *cfg;
 	u32 val;
 	int ret;
 
-	ret = uclass_get_device_by_driver(UCLASS_PHY,
-					  DM_GET_DRIVER(rockchip_naneng_combphy),
-					  &udev);
-	if (ret) {
-		pr_err("%s: get usb3-phy node failed: %d\n", __func__, ret);
+	ret = uclass_get(UCLASS_PHY, &uc);
+	if (ret)
 		return ret;
+
+	list_for_each_entry(dev, &uc->dev_head, uclass_node) {
+		if (dev->driver == DM_GET_DRIVER(rockchip_naneng_combphy) &&
+		    dev_read_addr(dev) == phy_addr) {
+			ret = uclass_get_device_tail(dev, 0, &udev);
+			if (ret)
+				return ret;
+			break;
+		}
+	}
+
+	if (!udev) {
+		pr_err("%s: get usb3-phy node failed: %d\n", __func__, ret);
+		return -ENODEV;
 	}
 
 	priv = dev_get_priv(udev);
