@@ -44,6 +44,10 @@ struct hw_config
 void set_lan_status(struct fdt_header *);
 #endif
 
+#ifdef CONFIG_RK3566_RVMON7
+void set_backlight_status(struct fdt_header *);
+#endif
+
 void parse_cmdline(void);
 
 void parse_hw_config(struct hw_config *);

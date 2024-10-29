@@ -11,6 +11,11 @@
 static int adc4_odmid = -1, adc5_prjid = -1;
 #endif
 
+#ifdef CONFIG_RK3566_RVMON7
+#include <adc.h>
+static int adc1_hwid = -1;
+#endif
+
 static char *devtype, *devnum, *file_addr;
 static unsigned long fdt_addr_r;
 
@@ -55,6 +60,38 @@ static void verify_devinfo(void)
 
 		adc4_odmid = id[0];
 		adc5_prjid = id[1];
+	}
+#endif
+#ifdef CONFIG_RK3566_RVMON7
+	if (adc1_hwid == -1) {
+		unsigned int in_voltage_raw;
+		float voltage_scale = 1.8066, voltage_raw, vresult;
+		int ret, adc_channel = 1, id = -1;
+
+		ret = adc_channel_single_shot("saradc", adc_channel, &in_voltage_raw);
+		if (ret)
+			id = -1;
+		else {
+			voltage_raw = (float)in_voltage_raw;
+			vresult = voltage_raw * voltage_scale;
+
+			if (vresult < 1950 && vresult > 1650)
+				id = 18;
+			else if (vresult < 1650 && vresult > 1350)
+				id = 15;
+			else if (vresult < 1350 && vresult > 1050)
+				id = 12;
+			else if (vresult < 1050 && vresult > 750)
+				id = 9;
+			else if (vresult < 750 && vresult > 450)
+				id = 6;
+			else if (vresult < 450 && vresult > 150)
+				id = 3;
+			else if (vresult < 150)
+				id = 0;
+		}
+
+		adc1_hwid = id;
 	}
 #endif
 }
@@ -1251,6 +1288,23 @@ void set_lan_status(struct fdt_header *working_fdt)
 	if ((adc4_odmid == 15 && adc5_prjid == 18) || (adc4_odmid == 18 && adc5_prjid == 12)) {
 		printf("Detect the SKU without LAN1\n");
 		set_hw_property(working_fdt, "/ethernet@fe010000", "status", "disabled", 9);
+	}
+}
+#endif
+
+#ifdef CONFIG_RK3566_RVMON7
+void set_backlight_status(struct fdt_header *working_fdt)
+{
+	verify_devinfo();
+
+	if (adc1_hwid == 18) {
+		printf("Detect board: RVMON7-CTRL-PCB R1.00, start merge gpio_r100.dtbo and dsi_jd9165ba_r100.dtbo\n");
+		merge_dts_overlay(NULL, working_fdt, "gpio_r100");
+		merge_dts_overlay(NULL, working_fdt, "dsi_jd9165ba_r100");
+	} else if (adc1_hwid == 15) {
+		printf("Detect board: RVMON7-CTRL-PCB R1.01, start merge gpio_r101.dtbo and dsi_jd9165ba_r101.dtbo\n");
+		merge_dts_overlay(NULL, working_fdt, "gpio_r101");
+		merge_dts_overlay(NULL, working_fdt, "dsi_jd9165ba_r101");
 	}
 }
 #endif

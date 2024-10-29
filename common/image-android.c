@@ -732,6 +732,9 @@ static int android_image_separate(struct andr_img_hdr *hdr,
 #ifdef CONFIG_RK3568_TB3N
 		set_lan_status(working_fdt);
 #endif
+#ifdef CONFIG_RK3566_RVMON7
+		set_backlight_status(working_fdt);
+#endif
 	}
 
 	return 0;
