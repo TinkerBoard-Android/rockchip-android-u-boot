@@ -965,6 +965,7 @@ static int flash_test_clkout(struct fdt_header *working_fdt, char *path, char *p
 }
 #endif
 
+#if defined(CONFIG_ROCKCHIP_RK3288) || defined(CONFIG_ROCKCHIP_RK3399) || defined(CONFIG_RK3568_TB3N) || defined(CONFIG_RK3566_RVMON7)
 static int set_hw_property(struct fdt_header *working_fdt, char *path, char *property, char *value, int length)
 {
 	int offset;
@@ -984,6 +985,7 @@ static int set_hw_property(struct fdt_header *working_fdt, char *path, char *pro
 
 	return 0;
 }
+#endif
 
 #ifdef CONFIG_ROCKCHIP_RK3288
 static ulong get_hw_property_u32(struct fdt_header *working_fdt, char *path, char *property)
