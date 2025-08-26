@@ -1301,8 +1301,8 @@ void set_backlight_status(struct fdt_header *working_fdt)
 		printf("Detect board: RVMON7-CTRL-PCB R1.00, start merge gpio_r100.dtbo and dsi_jd9165ba_r100.dtbo\n");
 		merge_dts_overlay(NULL, working_fdt, "gpio_r100");
 		merge_dts_overlay(NULL, working_fdt, "dsi_jd9165ba_r100");
-	} else if (adc1_hwid == 15) {
-		printf("Detect board: RVMON7-CTRL-PCB R1.01, start merge gpio_r101.dtbo and dsi_jd9165ba_r101.dtbo\n");
+	} else if (adc1_hwid == 15 || adc1_hwid == 12) {
+		printf("Detect board: RVMON7-CTRL-PCB R1.01(A), start merge gpio_r101.dtbo and dsi_jd9165ba_r101.dtbo\n");
 		merge_dts_overlay(NULL, working_fdt, "gpio_r101");
 		merge_dts_overlay(NULL, working_fdt, "dsi_jd9165ba_r101");
 	}
