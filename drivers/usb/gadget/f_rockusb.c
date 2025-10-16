@@ -95,8 +95,13 @@ int g_dnl_bind_fixup(struct usb_device_descriptor *dev, const char *name)
 		dev->idVendor  = cpu_to_le16(0x2207);
 		dev->idProduct = cpu_to_le16(0x0107);
 	} else if (!strncmp(name, "usb_dnl_ums", 11)) {
+#ifdef CONFIG_RK3566_RVMON7
+		dev->idVendor  = cpu_to_le16(0x2207);
+		dev->idProduct = cpu_to_le16(0x0010);
+#else
 		dev->idVendor  = cpu_to_le16(0x0b05);
 		dev->idProduct = cpu_to_le16(0x7820);
+#endif
 	}
 
 	return 0;

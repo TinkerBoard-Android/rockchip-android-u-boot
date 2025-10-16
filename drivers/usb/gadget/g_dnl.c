@@ -47,7 +47,11 @@
 
 static char product[MAX_STRING_PRODUCT];
 static char g_dnl_serial[MAX_STRING_SERIAL];
+#ifdef CONFIG_RK3566_RVMON7
+static const char manufacturer[] = CONFIG_USB_GADGET_MANUFACTURER;
+#else
 static const char manufacturer[] = "ASUS";
+#endif
 
 void g_dnl_set_serialnumber(char *s)
 {

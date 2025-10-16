@@ -1155,7 +1155,11 @@ static int do_verify(struct fsg_common *common)
 static int do_inquiry(struct fsg_common *common, struct fsg_buffhd *bh)
 {
 	struct fsg_lun *curlun = &common->luns[common->lun];
+#if defined(CONFIG_RK3566_RVMON7)
+	static const char vendor_id[] = "Linux   ";
+#else
 	static const char vendor_id[] = "ASUS    ";
+#endif
 	u8	*buf = (u8 *) bh->buf;
 
 	if (!curlun) {		/* Unsupported LUNs are okay */
