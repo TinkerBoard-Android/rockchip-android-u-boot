@@ -32,7 +32,7 @@ struct hw_config
 #endif
 
 #ifdef CONFIG_RK3566_RVMON7
-	int pwm1, pwm5;
+	int pwm1, pwm5, uart0;
 #endif
 	int auto_ums;
 

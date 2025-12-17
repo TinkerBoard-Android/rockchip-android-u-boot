@@ -592,6 +592,7 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 		i = 5;
 		if(memcmp(text + i, "on", 2) == 0) {
 			hw_conf->pwm1 = 1;
+			hw_conf->uart0 = -1;
 			i = i + 2;
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm1 = -1;
@@ -604,6 +605,16 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 			i = i + 2;
 		} else if(memcmp(text + i, "off", 3) == 0) {
 			hw_conf->pwm5 = -1;
+			i = i + 3;
+		}
+	} else if(memcmp(text, "uart0=", 6) == 0) {
+		i = 6;
+		if(memcmp(text + i, "on", 2) == 0) {
+			hw_conf->uart0 = 1;
+			hw_conf->pwm1 = -1;
+			i = i + 2;
+		} else if(memcmp(text + i, "off", 3) == 0) {
+			hw_conf->uart0 = -1;
 			i = i + 3;
 		}
 	}
@@ -1277,6 +1288,11 @@ void handle_hw_conf(cmd_tbl_t *cmdtp, struct fdt_header *working_fdt, struct hw_
 		set_hw_property(working_fdt, "/pwm@fe6e0010", "status", "okay", 5);
 	else if (hw_conf->pwm5 == -1)
 		set_hw_property(working_fdt, "/pwm@fe6e0010", "status", "disabled", 9);
+
+	if (hw_conf->uart0 == 1)
+		set_hw_property(working_fdt, "/serial@fdd50000", "status", "okay", 5);
+	else if (hw_conf->uart0 == -1)
+		set_hw_property(working_fdt, "/serial@fdd50000", "status", "disabled", 9);
 #endif
 }
 
