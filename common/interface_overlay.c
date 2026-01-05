@@ -608,14 +608,16 @@ static unsigned long get_intf_value(char *text, struct hw_config *hw_conf)
 			i = i + 3;
 		}
 	} else if(memcmp(text, "uart0=", 6) == 0) {
-		i = 6;
-		if(memcmp(text + i, "on", 2) == 0) {
-			hw_conf->uart0 = 1;
-			hw_conf->pwm1 = -1;
-			i = i + 2;
-		} else if(memcmp(text + i, "off", 3) == 0) {
-			hw_conf->uart0 = -1;
-			i = i + 3;
+		if (adc1_hwid == 15 || adc1_hwid == 12) {
+			i = 6;
+			if(memcmp(text + i, "on", 2) == 0) {
+				hw_conf->uart0 = 1;
+				hw_conf->pwm1 = -1;
+				i = i + 2;
+			} else if(memcmp(text + i, "off", 3) == 0) {
+				hw_conf->uart0 = -1;
+				i = i + 3;
+			}
 		}
 	}
 #endif
